@@ -190,12 +190,12 @@ export default function GameMasterPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-xl mx-auto w-full text-center space-y-6">
         <div className="w-full altar-panel-blood p-8 space-y-6">
-          <div className="w-20 h-20 rounded-2xl bg-black border border-rose-900/60 mx-auto flex items-center justify-center text-3xl shadow-xl">
+          <div className="w-20 h-20 rounded-2xl bg-black border border-stone-800 mx-auto flex items-center justify-center text-3xl shadow-xl">
             ⚜
           </div>
 
           <div className="space-y-1">
-            <span className="text-xs font-mono text-rose-400 uppercase font-bold tracking-widest block">
+            <span className="text-xs font-mono text-stone-400 uppercase font-bold tracking-widest block">
               ✦ Le Sang a Coulé — Thiercelieux S'éteint ✦
             </span>
             <h1 className="text-3xl sm:text-4xl font-cinzel font-bold text-white tracking-wide">
@@ -206,7 +206,7 @@ export default function GameMasterPage() {
             </h1>
           </div>
 
-          <p className="text-xs sm:text-sm text-stone-300 leading-relaxed bg-black/80 p-4 rounded-xl border border-rose-950 font-serif italic">
+          <p className="text-xs sm:text-sm text-stone-300 leading-relaxed bg-black/90 p-4 rounded-xl border border-stone-800 font-serif italic">
             « {logs[logs.length - 1]?.message} »
           </p>
 
@@ -218,9 +218,9 @@ export default function GameMasterPage() {
               {players.map((p) => {
                 const r = ROLES[p.role] || ROLES.villager;
                 return (
-                  <div key={p.id} className="flex justify-between items-center text-stone-200 p-2.5 rounded-lg bg-black border border-stone-900">
+                  <div key={p.id} className="flex justify-between items-center text-stone-200 p-2.5 rounded-lg bg-black border border-stone-800">
                     <span className="font-medieval font-bold">{p.name} {p.isLover ? '♥' : ''} {!p.isAlive ? '☠️' : '✨'}</span>
-                    <span className="font-bold text-[11px] px-2.5 py-0.5 rounded border border-white/10" style={{ color: r.color }}>
+                    <span className="font-bold text-[11px] px-2.5 py-0.5 rounded border border-stone-700 bg-stone-900 text-stone-300">
                       {r.name}
                     </span>
                   </div>
@@ -234,7 +234,7 @@ export default function GameMasterPage() {
               resetGame();
               window.location.href = '/setup';
             }}
-            className="w-full py-4 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800 text-white font-medieval font-bold text-sm uppercase tracking-wider shadow-2xl transition-all cursor-pointer"
+            className="w-full py-4 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-sm uppercase tracking-wider shadow-2xl transition-all cursor-pointer"
           >
             Commencer une Nouvelle Traque →
           </button>
@@ -269,7 +269,7 @@ export default function GameMasterPage() {
               Sceau Sacré #{revealIndex + 1} / {players.length}
             </span>
             <h2 className="text-2xl sm:text-3xl font-cinzel text-white font-bold">
-              Passez la stèle à <span className="text-amber-200 underline underline-offset-4">{currentPlayer.name}</span>
+              Passez la stèle à <span className="text-stone-200 underline underline-offset-4">{currentPlayer.name}</span>
             </h2>
             <p className="text-xs text-stone-400 font-sans">
               Touchez le sceau pour sonder votre rôle secret, puis dissimulez-le.
@@ -311,7 +311,7 @@ export default function GameMasterPage() {
           </div>
 
           <div className="space-y-1">
-            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
+            <span className="text-xs font-mono text-stone-400 uppercase tracking-widest font-bold">
               Ultime Tir du Chasseur
             </span>
             <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
@@ -337,10 +337,10 @@ export default function GameMasterPage() {
                     setIsMorningRevealActive(false);
                     setExecutedPlayer(null);
                   }}
-                  className="p-3.5 inquisition-box hover:border-orange-600/70 text-xs font-bold text-stone-200 truncate transition-all cursor-pointer"
+                  className="p-3.5 inquisition-box text-xs font-bold text-stone-200 truncate transition-all cursor-pointer border border-stone-800 hover:border-stone-600"
                 >
                   <span className="block text-sm font-medieval text-white mb-0.5">{p.name}</span>
-                  <span className="text-[10px] text-orange-400 font-mono">Abattre 🎯</span>
+                  <span className="text-[10px] text-stone-400 font-mono">Abattre 🎯</span>
                 </button>
               ))}
             </div>
@@ -360,7 +360,7 @@ export default function GameMasterPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
         <div className="w-full altar-panel-blood p-6 sm:p-8 flex flex-col items-center text-center space-y-6">
           <div className="space-y-1">
-            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
+            <span className="text-xs font-mono text-stone-400 uppercase tracking-widest font-bold">
               💥 Balle Fatale du Chasseur
             </span>
             <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
@@ -387,7 +387,7 @@ export default function GameMasterPage() {
 
           {isHunterVictimFlipped && (
             <div className="p-4 bg-black border border-stone-800 rounded-xl text-center space-y-1 max-w-md w-full shadow-lg">
-              <span className="text-xs font-medieval font-bold uppercase" style={{ color: roleDef.color }}>
+              <span className="text-xs font-medieval font-bold uppercase text-stone-400">
                 {roleDef.team === 'WEREWOLVES' ? '🐺 Une Bête Abattue !' : '🛡️ Un Innocent Frappé par la Balle...'}
               </span>
               <h4 className="text-xl font-cinzel font-bold text-white">{hunterVictimPlayer.name} était {roleDef.name}</h4>
@@ -419,7 +419,7 @@ export default function GameMasterPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
         <div className="w-full altar-panel p-6 sm:p-8 flex flex-col items-center text-center space-y-6">
           <div className="space-y-1">
-            <span className="text-xs font-mono text-purple-400 uppercase tracking-widest font-bold">
+            <span className="text-xs font-mono text-stone-400 uppercase tracking-widest font-bold">
               🔮 Vision Astrale & Sonde d'Âme
             </span>
             <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
@@ -446,7 +446,7 @@ export default function GameMasterPage() {
 
           {isSeerCardFlipped && (
             <div className="p-4 bg-black border border-stone-800 rounded-xl text-center space-y-1 max-w-md w-full shadow-lg">
-              <span className="text-xs font-medieval font-bold uppercase" style={{ color: roleDef.color }}>
+              <span className="text-xs font-medieval font-bold uppercase text-stone-400">
                 {roleDef.team === 'WEREWOLVES' ? '🐺 Engeance Démoniaque' : roleDef.team === 'SOLO' ? '⚡ Entité Solitaire' : '🛡️ Villageois Pur'}
               </span>
               <h4 className="text-xl font-cinzel font-bold text-white">{seerTargetPlayer.name} est {roleDef.name}</h4>
@@ -498,7 +498,7 @@ export default function GameMasterPage() {
                   <div key={d.player.id} className="flex flex-col items-center space-y-3 w-full">
                     <h3 className="text-xl font-cinzel font-bold text-white">
                       {isFlipped ? (
-                        <span className="text-rose-400 underline underline-offset-4">{d.player.name}</span>
+                        <span className="text-stone-200 underline underline-offset-4">{d.player.name}</span>
                       ) : (
                         <span className="text-stone-400 italic">« Qui a péri sous les crocs ? »</span>
                       )}
@@ -529,7 +529,7 @@ export default function GameMasterPage() {
                           setIsMorningRevealActive(false);
                           setHunterShootingPlayer(d.player);
                         }}
-                        className="px-6 py-2.5 rounded-xl bg-orange-950 hover:bg-orange-900 border border-orange-700 text-white font-medieval font-bold text-xs uppercase shadow-lg cursor-pointer"
+                        className="px-6 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-xs uppercase shadow-lg cursor-pointer"
                       >
                         💥 Déclencher le Tir du Chasseur →
                       </button>
@@ -570,7 +570,7 @@ export default function GameMasterPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
         <div className="w-full altar-panel-blood p-6 sm:p-8 flex flex-col items-center text-center space-y-6">
           <div className="space-y-1">
-            <span className="text-xs font-mono text-rose-400 uppercase tracking-widest font-bold">
+            <span className="text-xs font-mono text-stone-400 uppercase tracking-widest font-bold">
               🔥 Sentence Exécutée sur la Place Publique
             </span>
             <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
@@ -595,7 +595,7 @@ export default function GameMasterPage() {
 
           {isDayCardFlipped && (
             <div className="p-4 bg-black border border-stone-800 rounded-xl text-center space-y-1 max-w-md w-full shadow-lg">
-              <span className="text-xs font-medieval font-bold uppercase" style={{ color: roleDef.color }}>
+              <span className="text-xs font-medieval font-bold uppercase text-stone-400">
                 {roleDef.team === 'WEREWOLVES' ? '🐺 Une Créature Démoniaque Brûle !' : '🛡️ Un Innocent Exterminé...'}
               </span>
               <h4 className="text-xl font-cinzel font-bold text-white">{executedPlayer.name} était {roleDef.name}</h4>
@@ -609,7 +609,7 @@ export default function GameMasterPage() {
                 setIsDayVoteRevealActive(false);
                 setHunterShootingPlayer(executedPlayer);
               }}
-              className="w-full py-3 rounded-xl bg-orange-950 hover:bg-orange-900 border border-orange-700 text-white font-medieval font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer"
+              className="w-full py-3 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer"
             >
               💥 Déclencher le Tir Fatal du Chasseur →
             </button>
@@ -787,15 +787,9 @@ export default function GameMasterPage() {
   return (
     <div className="flex-1 flex flex-col px-4 sm:px-8 py-8 max-w-6xl mx-auto w-full space-y-6 relative z-10">
       {/* ========================================================================= */}
-      {/* 1. AUTEL DU CONTEUR AVEC BANNIÈRE GOTHIQUE EN RELIEF */}
+      {/* 1. AUTEL DU CONTEUR */}
       {/* ========================================================================= */}
       <div className="altar-panel p-6 sm:p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        {/* Ornement de fond gothique sculpté en filigrane */}
-        <div 
-          className="absolute inset-0 opacity-15 mix-blend-screen bg-right bg-no-repeat bg-contain pointer-events-none"
-          style={{ backgroundImage: "url('/images/textures/banner_inquisition.jpg')" }}
-        />
-
         <div className="space-y-2 z-10">
           <div className="flex items-center gap-3">
             <img src="/images/textures/wax_seal.png" alt="Sceau" className="w-6 h-6 object-contain" />
@@ -821,31 +815,31 @@ export default function GameMasterPage() {
               setIsCardFlipped(false);
               sounds.stopNightLoop();
             }}
-            className="px-3.5 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-700 text-stone-200 text-xs font-medieval font-bold transition-all cursor-pointer shadow"
+            className="px-3.5 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 text-xs font-medieval font-bold transition-all cursor-pointer shadow"
           >
             🃏 Sceaux Secrets
           </button>
           <button
             onClick={() => sounds.playWolfHowl()}
-            className="px-3 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
           >
             🐺 Hurlement
           </button>
           <button
             onClick={() => sounds.playBell()}
-            className="px-3 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
           >
             🔔 Cloche
           </button>
           <button
             onClick={() => sounds.playGong()}
-            className="px-3 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
           >
             🪘 Gong
           </button>
           <button
             onClick={() => sounds.playGunshot()}
-            className="px-3 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 text-xs font-bold transition-all cursor-pointer"
           >
             💥 Mousquet
           </button>
@@ -876,7 +870,7 @@ export default function GameMasterPage() {
       ) : (
         <div className="space-y-6">
           {/* SÉLECTEUR DE PHASE */}
-          <div className="flex items-center justify-between p-2 rounded-xl bg-[#08040a] border border-stone-800 font-medieval text-xs">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-[#0d0a10] border border-stone-800 font-medieval text-xs">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -911,7 +905,7 @@ export default function GameMasterPage() {
           {/* VUE DE NUIT */}
           {activeCycleTab === 'NIGHT' && activeNightStep && (
             <div className="altar-panel p-6 sm:p-7 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-800/80 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-800 pb-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {nightStepsSequence.map((step, idx) => (
                     <button
@@ -920,7 +914,7 @@ export default function GameMasterPage() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-medieval font-bold transition-all cursor-pointer ${
                         idx === currentStepIndex
                           ? 'bg-stone-800 text-white border border-stone-600'
-                          : 'bg-black text-stone-400 hover:text-white border border-stone-900'
+                          : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
                       }`}
                     >
                       {idx + 1}. {step.roleName}
@@ -930,14 +924,14 @@ export default function GameMasterPage() {
 
                 <button
                   onClick={() => activeNightStep.soundAction()}
-                  className="px-3.5 py-1.5 bg-black hover:bg-stone-900 border border-stone-800 rounded-lg text-xs font-medieval font-bold text-stone-300 cursor-pointer shadow"
+                  className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 border border-stone-800 rounded-lg text-xs font-medieval font-bold text-stone-300 cursor-pointer shadow"
                 >
                   ▶ Jouer {activeNightStep.soundLabel}
                 </button>
               </div>
 
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                <div className="w-40 h-56 shrink-0 bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                <div className="w-40 h-56 shrink-0 bg-black rounded-xl overflow-hidden border border-stone-800 shadow-2xl">
                   <RoleArtwork roleId={activeNightStep.roleDef.id} className="w-full h-full" />
                 </div>
 
@@ -951,7 +945,7 @@ export default function GameMasterPage() {
                     </h2>
                   </div>
 
-                  <div className="p-4 bg-black border-l-2 border-stone-600 rounded-r-xl space-y-1">
+                  <div className="p-4 bg-black/80 border-l-2 border-stone-600 rounded-r-xl space-y-1">
                     <span className="text-[10px] font-medieval uppercase font-bold text-stone-400 block">Incantation à lire à haute voix :</span>
                     <p className="text-sm font-serif italic text-stone-200 leading-relaxed">
                       {activeNightStep.script}
@@ -963,8 +957,8 @@ export default function GameMasterPage() {
                 </div>
               </div>
 
-              {/* Sélection Interactive */}
-              <div className="pt-4 border-t border-stone-800/80 space-y-3">
+              {/* Sélection Interactive avec Bordures Homogènes Minérales */}
+              <div className="pt-4 border-t border-stone-800 space-y-3">
                 <span className="text-xs font-medieval uppercase text-stone-400 font-bold block">
                   Désigner l'action de l'entité :
                 </span>
@@ -972,7 +966,7 @@ export default function GameMasterPage() {
                 {/* CUPIDON */}
                 {activeNightStep.id === 'cupid' && (
                   <div className="space-y-2">
-                    <span className="text-xs text-rose-400 font-bold block font-medieval">
+                    <span className="text-xs text-stone-300 font-bold block font-medieval">
                       Choisissez les 2 amoureux ({targetLovers.length} / 2) :
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -998,12 +992,12 @@ export default function GameMasterPage() {
                             }}
                             className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-rose-950/80 border-rose-700 text-rose-200'
+                                ? 'bg-stone-800 border-stone-500 text-stone-100 shadow-md'
                                 : 'inquisition-box text-stone-300'
                             }`}
                           >
                             <span className="truncate block">{p.name}</span>
-                            {isSelected && <span className="text-rose-400 text-[10px] block mt-0.5">♥ Amoureux</span>}
+                            {isSelected && <span className="text-stone-400 text-[10px] block mt-0.5">♥ Amoureux</span>}
                           </button>
                         );
                       })}
@@ -1029,12 +1023,12 @@ export default function GameMasterPage() {
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-blue-950/80 border-blue-700 text-blue-200'
+                              ? 'bg-stone-800 border-stone-500 text-stone-100 shadow-md'
                               : 'inquisition-box text-stone-300'
                           }`}
                         >
                           <span className="truncate block">{p.name}</span>
-                          {isSelected && <span className="text-blue-400 text-[10px] block mt-0.5">🛡️ Protégé</span>}
+                          {isSelected && <span className="text-stone-400 text-[10px] block mt-0.5">🛡️ Protégé</span>}
                         </button>
                       );
                     })}
@@ -1061,12 +1055,12 @@ export default function GameMasterPage() {
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-purple-950/80 border-purple-700 text-purple-200'
+                              ? 'bg-stone-800 border-stone-500 text-stone-100 shadow-md'
                               : 'inquisition-box text-stone-300'
                           }`}
                         >
                           <span className="truncate block">{p.name}</span>
-                          <span className="text-purple-300 text-[10px] block mt-0.5">🔮 Dévoiler la carte</span>
+                          <span className="text-stone-400 text-[10px] block mt-0.5">🔮 Dévoiler la carte</span>
                         </button>
                       );
                     })}
@@ -1087,12 +1081,12 @@ export default function GameMasterPage() {
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-red-950/80 border-red-700 text-red-200'
+                              ? 'bg-stone-800 border-stone-500 text-stone-100 shadow-md'
                               : 'inquisition-box text-stone-300'
                           }`}
                         >
                           <span className="truncate block">{p.name}</span>
-                          {isSelected && <span className="text-red-400 text-[10px] block mt-0.5">🐺 Proie Désignée</span>}
+                          {isSelected && <span className="text-stone-400 text-[10px] block mt-0.5">🐺 Proie Désignée</span>}
                         </button>
                       );
                     })}
@@ -1103,19 +1097,19 @@ export default function GameMasterPage() {
                 {activeNightStep.id === 'witch' && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 text-xs font-medieval">
-                      <span className={`px-3 py-1 rounded border ${witchPlayer?.hasUsedLifePotion ? 'bg-black border-stone-800 text-stone-500 line-through' : 'bg-emerald-950/60 border-emerald-800 text-emerald-300'}`}>
+                      <span className={`px-3 py-1 rounded border ${witchPlayer?.hasUsedLifePotion ? 'bg-black border-stone-800 text-stone-500 line-through' : 'bg-stone-900 border-stone-700 text-stone-300'}`}>
                         Potion de Vie : {witchPlayer?.hasUsedLifePotion ? 'Épuisée' : 'Disponible (1x)'}
                       </span>
-                      <span className={`px-3 py-1 rounded border ${witchPlayer?.hasUsedDeathPotion ? 'bg-black border-stone-800 text-stone-500 line-through' : 'bg-purple-950/60 border-purple-800 text-purple-300'}`}>
+                      <span className={`px-3 py-1 rounded border ${witchPlayer?.hasUsedDeathPotion ? 'bg-black border-stone-800 text-stone-500 line-through' : 'bg-stone-900 border-stone-700 text-stone-300'}`}>
                         Potion de Mort : {witchPlayer?.hasUsedDeathPotion ? 'Épuisée' : 'Disponible (1x)'}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-black border border-stone-800 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-black/80 border border-stone-800 rounded-xl">
                       <div>
                         <span className="text-xs font-medieval font-bold text-white block">Potion de Guérison</span>
                         <span className="text-[11px] text-stone-400">
-                          Victime des loups : <strong className="text-red-400">{players.find(p => p.id === targetWolf)?.name || 'Aucune'}</strong>
+                          Victime des loups : <strong className="text-stone-200">{players.find(p => p.id === targetWolf)?.name || 'Aucune'}</strong>
                         </span>
                       </div>
                       <button
@@ -1128,7 +1122,7 @@ export default function GameMasterPage() {
                           witchPlayer?.hasUsedLifePotion
                             ? 'bg-stone-900 text-stone-600 cursor-not-allowed'
                             : witchHeals
-                              ? 'bg-emerald-800 text-white'
+                              ? 'bg-stone-800 text-white border border-stone-600'
                               : 'bg-stone-900 text-stone-300 hover:text-white border border-stone-700'
                         }`}
                       >
@@ -1158,7 +1152,7 @@ export default function GameMasterPage() {
                                 }}
                                 className={`p-2.5 rounded-lg border text-xs font-medieval font-bold text-left truncate transition-all cursor-pointer ${
                                   isSelected
-                                    ? 'bg-purple-950 border-purple-600 text-purple-200'
+                                    ? 'bg-stone-800 border-stone-500 text-stone-100 shadow-md'
                                     : 'inquisition-box text-stone-400 hover:text-white'
                                 }`}
                               >
@@ -1178,7 +1172,7 @@ export default function GameMasterPage() {
                 <button
                   disabled={currentStepIndex === 0}
                   onClick={() => goToStep(currentStepIndex - 1)}
-                  className="px-4 py-2 rounded-lg bg-black hover:bg-stone-900 disabled:opacity-30 text-stone-400 font-medieval text-xs font-bold cursor-pointer border border-stone-800"
+                  className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 disabled:opacity-30 text-stone-400 font-medieval text-xs font-bold cursor-pointer border border-stone-800"
                 >
                   &larr; Étape Précédente
                 </button>
@@ -1193,7 +1187,7 @@ export default function GameMasterPage() {
                 ) : (
                   <button
                     onClick={handleWakeUpVillage}
-                    className="px-5 py-2.5 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-700 text-white font-medieval text-xs font-bold cursor-pointer"
+                    className="px-5 py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-600 text-white font-medieval text-xs font-bold cursor-pointer"
                   >
                     ☀️ Lever du Jour sur le Village →
                   </button>
@@ -1206,7 +1200,7 @@ export default function GameMasterPage() {
           {activeCycleTab === 'DAY' && (
             <div className="space-y-6">
               <div className="altar-panel p-6 sm:p-7 space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-800/80 pb-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-800 pb-5">
                   <div>
                     <span className="text-xs font-medieval text-stone-400 uppercase font-bold tracking-widest flex items-center gap-2">
                       <span>⚜</span> Délibérations & Tribunal Populaire
@@ -1218,14 +1212,14 @@ export default function GameMasterPage() {
 
                   <button
                     onClick={handleSleepVillage}
-                    className="px-4 py-2 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-800 font-medieval text-xs font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-200 border border-stone-700 font-medieval text-xs font-bold cursor-pointer"
                   >
                     🌙 Endormir le Village (Nuit Suivante) →
                   </button>
                 </div>
 
                 {/* MODULE SABLIER */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-6 bg-black border border-stone-800 rounded-xl relative overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-6 bg-black/90 border border-stone-800 rounded-xl relative overflow-hidden">
                   <div className="md:col-span-4 flex flex-col items-center justify-center relative">
                     <div className="relative w-32 h-32 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -1241,7 +1235,7 @@ export default function GameMasterPage() {
                           cx="50"
                           cy="50"
                           r="42"
-                          stroke={timerSeconds <= 15 ? '#f43f5e' : '#e2e8f0'}
+                          stroke={timerSeconds <= 15 ? '#e11d48' : '#d4d4d8'}
                           strokeWidth="6"
                           strokeDasharray="264"
                           strokeDashoffset={264 - (264 * timerPercentage) / 100}
@@ -1277,14 +1271,14 @@ export default function GameMasterPage() {
 
                       <button
                         onClick={() => resetTimer()}
-                        className="px-3.5 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-stone-300 font-medieval text-xs font-bold cursor-pointer"
+                        className="px-3.5 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 font-medieval text-xs font-bold cursor-pointer"
                       >
                         🔄 Réinitialiser
                       </button>
 
                       <button
                         onClick={() => sounds.playGong()}
-                        className="px-3.5 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-800 text-purple-200 font-medieval text-xs font-bold cursor-pointer"
+                        className="px-3.5 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 font-medieval text-xs font-bold cursor-pointer"
                       >
                         🪘 Gong
                       </button>
@@ -1299,7 +1293,7 @@ export default function GameMasterPage() {
                           className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
                             timerDuration === s
                               ? 'bg-stone-800 border border-stone-500 text-white font-bold'
-                              : 'bg-black border border-stone-900 text-stone-400 hover:text-stone-200'
+                              : 'bg-stone-900 border border-stone-800 text-stone-400 hover:text-stone-200'
                           }`}
                         >
                           {s / 60} min
@@ -1323,7 +1317,7 @@ export default function GameMasterPage() {
                       key={p.id}
                       className="p-3.5 inquisition-box flex items-center justify-between gap-3 shadow"
                     >
-                      <div className="w-12 h-14 shrink-0 bg-black rounded-lg overflow-hidden border border-white/10 shadow">
+                      <div className="w-12 h-14 shrink-0 bg-black rounded-lg overflow-hidden border border-stone-800 shadow">
                         <RoleArtwork roleId={role.id} className="w-full h-full" />
                       </div>
 
@@ -1331,9 +1325,9 @@ export default function GameMasterPage() {
                         <div className="flex items-center gap-1.5">
                           <h4 className="text-sm font-medieval font-bold text-white truncate">{p.name}</h4>
                           {p.isCaptain && <span className="text-[10px] text-amber-400 font-bold">👑</span>}
-                          {p.isLover && <span className="text-[10px] text-pink-500 font-bold">♥</span>}
+                          {p.isLover && <span className="text-[10px] text-stone-400 font-bold">♥</span>}
                         </div>
-                        <span className="text-xs font-bold block" style={{ color: role.color }}>
+                        <span className="text-xs font-bold block text-stone-400">
                           {role.name}
                         </span>
                       </div>
@@ -1341,14 +1335,14 @@ export default function GameMasterPage() {
                       <div className="flex flex-col gap-1 shrink-0 font-medieval text-[11px]">
                         <button
                           onClick={() => handleExecutePlayer(p)}
-                          className="px-2.5 py-1 bg-red-950 hover:bg-red-900 border border-red-800 text-red-200 rounded font-bold cursor-pointer transition-colors"
+                          className="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 rounded font-bold cursor-pointer transition-colors"
                         >
                           Condamner
                         </button>
                         {!p.isCaptain && (
                           <button
                             onClick={() => setCaptain(p.id)}
-                            className="px-2 py-0.5 bg-black hover:bg-stone-900 border border-stone-800 text-stone-400 rounded cursor-pointer"
+                            className="px-2 py-0.5 bg-black hover:bg-stone-900 border border-stone-800 text-stone-500 rounded cursor-pointer"
                           >
                             Maire
                           </button>
@@ -1361,7 +1355,7 @@ export default function GameMasterPage() {
 
               {/* Cimetière */}
               {deadPlayers.length > 0 && (
-                <div className="pt-4 border-t border-stone-800/80 space-y-2">
+                <div className="pt-4 border-t border-stone-800 space-y-2">
                   <span className="text-xs font-medieval text-stone-500 font-bold uppercase block tracking-wider">
                     ☠️ Cimetière des Damnés ({deadPlayers.length})
                   </span>
@@ -1369,9 +1363,9 @@ export default function GameMasterPage() {
                     {deadPlayers.map((p) => {
                       const role = ROLES[p.role] || ROLES.villager;
                       return (
-                        <div key={p.id} className="p-2.5 bg-black border border-stone-900 rounded-lg text-xs font-medieval text-stone-400">
+                        <div key={p.id} className="p-2.5 bg-black/80 border border-stone-900 rounded-lg text-xs font-medieval text-stone-400">
                           <span className="font-bold text-stone-200 block truncate">{p.name}</span>
-                          <span className="text-[11px]" style={{ color: role.color }}>{role.name}</span>
+                          <span className="text-[11px] text-stone-500">{role.name}</span>
                         </div>
                       );
                     })}
