@@ -438,9 +438,7 @@ export default function GameMasterPage() {
             playerName={isSeerCardFlipped ? seerTargetPlayer.name : `Âme de ${seerTargetPlayer.name}`}
             isRevealed={isSeerCardFlipped}
             onToggleReveal={() => {
-              const next = !isSeerCardFlipped;
-              setIsSeerCardFlipped(next);
-              if (next) sounds.playMagicChime();
+              setIsSeerCardFlipped(!isSeerCardFlipped);
             }}
             size="lg"
           />
@@ -589,7 +587,9 @@ export default function GameMasterPage() {
             onToggleReveal={() => {
               const next = !isDayCardFlipped;
               setIsDayCardFlipped(next);
-              if (next) sounds.playDeath();
+              if (next) {
+                sounds.playFire();
+              }
             }}
             size="lg"
           />
