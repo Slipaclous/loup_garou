@@ -15,6 +15,7 @@ export default function GameMasterPage() {
     eliminatePlayer,
     setCaptain,
     setNightCupidLovers,
+    resolveHunterShot,
     startGame,
     dayNumber,
   } = useGameStore();
@@ -30,6 +31,14 @@ export default function GameMasterPage() {
   const [isMorningRevealActive, setIsMorningRevealActive] = useState(false);
   const [morningDeaths, setMorningDeaths] = useState<{ player: Player; roleDef: typeof ROLES.werewolf; reason: string }[]>([]);
   const [morningDeathCardFlipped, setMorningDeathCardFlipped] = useState<Record<string, boolean>>({});
+
+  // Écran de révélation du vote / bûcher de fin de journée
+  const [isDayVoteRevealActive, setIsDayVoteRevealActive] = useState(false);
+  const [executedPlayer, setExecutedPlayer] = useState<Player | null>(null);
+  const [isDayCardFlipped, setIsDayCardFlipped] = useState(false);
+
+  // Modal Tir de vengeance du Chasseur
+  const [hunterShootingPlayer, setHunterShootingPlayer] = useState<Player | null>(null);
 
   // Navigation séquentielle Jour par Jour (Step-by-step)
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -52,7 +61,7 @@ export default function GameMasterPage() {
 
   // Déclenchement automatique de la boucle audio nocturne
   useEffect(() => {
-    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive) {
+    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive) {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
@@ -60,7 +69,7 @@ export default function GameMasterPage() {
     return () => {
       sounds.stopNightLoop();
     };
-  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive]);
+  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive]);
 
   const handleQuickDemoGame = () => {
     useGameStore.setState({
@@ -90,6 +99,14 @@ export default function GameMasterPage() {
     setRevealIndex(0);
     setIsCardFlipped(false);
     sounds.stopNightLoop();
+  };
+
+  // Exécution lors du vote de jour avec révélation écran
+  const handleExecutePlayer = (p: Player) => {
+    eliminatePlayer(p.id, 'Condamné et brûlé sur la place publique par le village.');
+    setExecutedPlayer(p);
+    setIsDayCardFlipped(false);
+    setIsDayVoteRevealActive(true);
   };
 
   if (!mounted) {
@@ -177,7 +194,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 2. RÉVÉLATION CINÉMATIQUE DES MORTS DU MATIN (ANONYME JUSQU'AU CLIC)
+  // 2. RÉVÉLATION CINÉMATIQUE DU MATIN (RETOURNEZ L'ÉCRAN)
   // =========================================================================
   if (isMorningRevealActive) {
     return (
@@ -203,7 +220,6 @@ export default function GameMasterPage() {
                 const isFlipped = morningDeathCardFlipped[d.player.id] || false;
                 return (
                   <div key={d.player.id} className="flex flex-col items-center space-y-3 w-full">
-                    {/* Nom masqué tant que la carte n'est pas cliquée */}
                     <div className="text-center">
                       <span className="text-xs font-mono text-amber-400 uppercase font-bold tracking-wider">
                         Victime #{index + 1}
@@ -227,16 +243,19 @@ export default function GameMasterPage() {
                           ...morningDeathCardFlipped,
                           [d.player.id]: nextFlipped
                         });
-                        // Joue le glas funèbre au moment précis de la révélation
                         if (nextFlipped) {
                           sounds.playDeath();
+                          // Si c'est le chasseur qui est mort la nuit -> Activer le tir
+                          if (d.player.role === 'hunter') {
+                            setTimeout(() => setHunterShootingPlayer(d.player), 1200);
+                          }
                         }
                       }}
                       size="lg"
                     />
 
                     {isFlipped && (
-                      <div className="p-3.5 bg-red-950/60 border border-red-500/50 rounded-2xl text-xs text-red-200 max-w-sm text-center shadow-lg animate-fadeIn">
+                      <div className="p-3.5 bg-red-950/60 border border-red-500/50 rounded-2xl text-xs text-red-200 max-w-sm text-center shadow-lg">
                         <p><strong>{d.player.name}</strong> ({d.roleDef.name})</p>
                         <p className="text-[11px] text-red-300/80 mt-0.5">{d.reason}</p>
                       </div>
@@ -260,6 +279,143 @@ export default function GameMasterPage() {
             className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-orange-600/30 transition-all cursor-pointer"
           >
             Ouvrir les Débats du Village &rarr;
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 3. RÉVÉLATION CINÉMATIQUE DU CONDAMNÉ DU BÛCHER (VOTE DE JOUR)
+  // =========================================================================
+  if (isDayVoteRevealActive && executedPlayer) {
+    const roleDef = ROLES[executedPlayer.role] || ROLES.villager;
+    const isHunter = executedPlayer.role === 'hunter';
+
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
+        <div className="w-full bg-[#120f18] border-2 border-red-500/50 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl shadow-red-950/40">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-red-400 uppercase tracking-widest font-bold">
+              🔥 Sentence du Tribunal Populaire
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-display text-white font-bold">
+              {isDayCardFlipped ? `${executedPlayer.name} a été exécuté(e)` : 'Verdict du Village'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300">
+              {isDayCardFlipped 
+                ? `Le village a découvert sa véritable nature :` 
+                : `Tournez l'écran vers le village et touchez la carte pour révéler l'identité de ${executedPlayer.name} :`}
+            </p>
+          </div>
+
+          <RoleCard
+            roleId={executedPlayer.role}
+            playerName={isDayCardFlipped ? executedPlayer.name : 'Condamné au bûcher'}
+            isRevealed={isDayCardFlipped}
+            onToggleReveal={() => {
+              const next = !isDayCardFlipped;
+              setIsDayCardFlipped(next);
+              if (next) {
+                sounds.playDeath();
+                if (isHunter) {
+                  setTimeout(() => setHunterShootingPlayer(executedPlayer), 1200);
+                }
+              }
+            }}
+            size="lg"
+          />
+
+          {isDayCardFlipped && (
+            <div className="p-4 bg-black/60 border-2 rounded-2xl text-center space-y-1 max-w-md w-full shadow-lg" style={{ borderColor: roleDef.color }}>
+              <span className="text-xs font-mono font-bold uppercase" style={{ color: roleDef.color }}>
+                {roleDef.team === 'WEREWOLVES' ? '🐺 Un Monstre a Péri !' : '🛡️ Un Innocent Sacrifié...'}
+              </span>
+              <h4 className="text-xl font-bold text-white">{executedPlayer.name} était {roleDef.name}</h4>
+              <p className="text-xs text-slate-400 italic pt-1">{roleDef.shortDesc}</p>
+            </div>
+          )}
+
+          {/* Si c'est le chasseur, message d'alerte tir */}
+          {isDayCardFlipped && isHunter && (
+            <div className="p-4 bg-orange-950/80 border-2 border-orange-500 rounded-2xl text-xs text-orange-200 font-mono font-bold space-y-2 w-full max-w-md">
+              <span>🎯 LE CHASSEUR A LE TEMPS D'ABATTRE QUELQU'UN DANS SON DERNIER SOUFFLE !</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 justify-center">
+            {isDayCardFlipped && isHunter && (
+              <button
+                onClick={() => setHunterShootingPlayer(executedPlayer)}
+                className="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-orange-600/30 cursor-pointer"
+              >
+                💥 Faire Tirer le Chasseur &rarr;
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setIsDayVoteRevealActive(false);
+                setExecutedPlayer(null);
+                setIsDayCardFlipped(false);
+              }}
+              className="px-8 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider font-mono transition-all cursor-pointer border border-slate-700"
+            >
+              Retourner au Tribunal &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 4. MODAL TIR DU CHASSEUR
+  // =========================================================================
+  if (hunterShootingPlayer) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
+        <div className="w-full bg-[#18110b] border-2 border-orange-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl shadow-orange-950/50">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
+              💥 Tir Ultime du Chasseur
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-display text-white font-bold">
+              {hunterShootingPlayer.name} dégaine son fusil !
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300">
+              « {hunterShootingPlayer.name} a été abattu mais dans son dernier râle, il choisit sa cible... »
+            </p>
+          </div>
+
+          <div className="w-full space-y-3">
+            <span className="text-xs font-mono text-orange-300 uppercase font-bold block">
+              Désignez le joueur à abattre :
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {livingPlayers.filter(p => p.id !== hunterShootingPlayer.id).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    resolveHunterShot(p.id);
+                    sounds.playGunshot();
+                    setHunterShootingPlayer(null);
+                    setIsDayVoteRevealActive(false);
+                    setExecutedPlayer(null);
+                  }}
+                  className="p-3.5 bg-black/60 border border-orange-500/40 hover:border-orange-500 hover:bg-orange-950/60 rounded-xl text-xs font-bold text-orange-200 truncate transition-all cursor-pointer shadow"
+                >
+                  Abattre {p.name} 💥
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setHunterShootingPlayer(null)}
+            className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors cursor-pointer"
+          >
+            Annuler le tir &rarr;
           </button>
         </div>
       </div>
@@ -336,7 +492,7 @@ export default function GameMasterPage() {
     }
   };
 
-  // Passer à la phase de Jour avec son de cloche uniquement (le glas de mort sera joué sur clic de carte)
+  // Passer à la phase de Jour avec son de cloche uniquement
   const handleWakeUpVillage = () => {
     sounds.stopNightLoop();
     sounds.playBell();
@@ -423,6 +579,8 @@ export default function GameMasterPage() {
     setWitchKillsId(null);
     setSeerTargetId(null);
     setIsMorningRevealActive(false);
+    setIsDayVoteRevealActive(false);
+    setHunterShootingPlayer(null);
   };
 
   return (
@@ -453,25 +611,25 @@ export default function GameMasterPage() {
           </button>
           <button
             onClick={() => sounds.playWolfHowl()}
-            className="px-3 py-1.5 rounded-xl bg-red-950/90 border border-red-500/40 hover:bg-red-900 text-red-200 text-xs font-bold transition-colors cursor-pointer shadow"
+            className="px-3.5 py-1.5 rounded-xl bg-red-950/90 border border-red-500/40 hover:bg-red-900 text-red-200 text-xs font-bold transition-colors cursor-pointer shadow"
           >
             🐺 Loup
           </button>
           <button
             onClick={() => sounds.playBell()}
-            className="px-3 py-1.5 rounded-xl bg-amber-950/90 border border-amber-500/40 hover:bg-amber-900 text-amber-200 text-xs font-bold transition-colors cursor-pointer shadow"
+            className="px-3.5 py-1.5 rounded-xl bg-amber-950/90 border border-amber-500/40 hover:bg-amber-900 text-amber-200 text-xs font-bold transition-colors cursor-pointer shadow"
           >
             🔔 Cloche
           </button>
           <button
             onClick={() => sounds.playGunshot()}
-            className="px-3 py-1.5 rounded-xl bg-orange-950/90 border border-orange-500/40 hover:bg-orange-900 text-orange-200 text-xs font-bold transition-colors cursor-pointer shadow"
+            className="px-3.5 py-1.5 rounded-xl bg-orange-950/90 border border-orange-500/40 hover:bg-orange-900 text-orange-200 text-xs font-bold transition-colors cursor-pointer shadow"
           >
             💥 Fusil
           </button>
           <button
             onClick={() => sounds.playDeath()}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-200 text-xs font-bold transition-colors cursor-pointer shadow"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-200 text-xs font-bold transition-colors cursor-pointer shadow"
           >
             ⚰️ Glas
           </button>
@@ -535,7 +693,7 @@ export default function GameMasterPage() {
           </div>
 
           {/* ========================================================================= */}
-          {/* VUE 1 : DÉROULEMENT SÉQUENTIEL DE LA NUIT (STEP BY STEP AVEC SONS) */}
+          {/* VUE 1 : DÉROULEMENT SÉQUENTIEL DE LA NUIT */}
           {/* ========================================================================= */}
           {activeCycleTab === 'NIGHT' && activeNightStep && (
             <div className="bg-[#10141f] border-2 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl" style={{ borderColor: activeNightStep.roleDef.color }}>
@@ -854,7 +1012,7 @@ export default function GameMasterPage() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Laissez les villageois débattre et voter. Lorsqu'un joueur est désigné au bûcher ou abattu, cliquez sur son bouton <strong>Éliminer</strong> (joue le glas funèbre) ou son coup de fusil.
+                  Laissez les villageois débattre et voter. Lorsqu'un joueur est désigné par le vote populaire, cliquez sur <strong>Condamner au Bûcher</strong> pour afficher sa révélation à toute la table.
                 </p>
               </div>
 
@@ -885,24 +1043,11 @@ export default function GameMasterPage() {
 
                       <div className="flex flex-col gap-1 shrink-0 font-mono text-[11px]">
                         <button
-                          onClick={() => {
-                            if (confirm(`Éliminer ${p.name} ?`)) {
-                              eliminatePlayer(p.id, 'Éliminé par le vote du village.');
-                              sounds.playDeath();
-                            }
-                          }}
+                          onClick={() => handleExecutePlayer(p)}
                           className="px-2.5 py-1 bg-red-950/80 border border-red-500/40 text-red-300 hover:bg-red-900 rounded font-bold cursor-pointer"
                         >
-                          Éliminer
+                          Condamner
                         </button>
-                        {p.role === 'hunter' && (
-                          <button
-                            onClick={() => sounds.playGunshot()}
-                            className="px-2 py-0.5 bg-orange-950/60 border border-orange-500/40 text-orange-300 rounded text-[10px] cursor-pointer"
-                          >
-                            💥 Tir
-                          </button>
-                        )}
                         {!p.isCaptain && (
                           <button
                             onClick={() => setCaptain(p.id)}
