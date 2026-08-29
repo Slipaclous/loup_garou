@@ -52,7 +52,7 @@ export default function HomePage() {
               </div>
 
               <h3 className="text-2xl sm:text-3xl font-cinzel text-amber-100 font-bold group-hover:text-red-400 transition-colors">
-                Passe & Joue &rarr;
+                Passe & Joue →
               </h3>
 
               <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans">
@@ -62,7 +62,7 @@ export default function HomePage() {
 
             <div className="pt-4 border-t border-red-900/30 flex items-center justify-between text-xs font-medieval text-red-400 font-bold z-10">
               <span>👥 4 à 18 Joueurs</span>
-              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider">Entrer dans l'Arène &rarr;</span>
+              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider">Entrer dans l'Arène →</span>
             </div>
           </Link>
 
@@ -85,7 +85,7 @@ export default function HomePage() {
               </div>
 
               <h3 className="text-2xl sm:text-3xl font-cinzel text-amber-100 font-bold group-hover:text-purple-400 transition-colors">
-                Maître du Jeu (MJ) &rarr;
+                Maître du Jeu (MJ) →
               </h3>
 
               <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans">
@@ -95,7 +95,7 @@ export default function HomePage() {
 
             <div className="pt-4 border-t border-purple-900/30 flex items-center justify-between text-xs font-medieval text-purple-400 font-bold z-10">
               <span>📜 Mode Conteur</span>
-              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider">Ouvrir le Grimoire &rarr;</span>
+              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider">Ouvrir le Grimoire →</span>
             </div>
           </Link>
         </div>
@@ -107,7 +107,7 @@ export default function HomePage() {
               <span>⚜</span> Bestiaire & Entités Démoniaques
             </span>
             <Link href="/grimoire" className="text-xs font-mono text-amber-400 hover:text-amber-300 font-bold transition-colors">
-              Consulter le Grimoire ({Object.keys(ROLES).length} Rôles) &rarr;
+              Consulter le Grimoire ({Object.keys(ROLES).length} Rôles) →
             </Link>
           </div>
 

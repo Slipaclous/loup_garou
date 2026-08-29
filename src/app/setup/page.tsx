@@ -144,7 +144,7 @@ export default function SetupPage() {
                 : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
             }`}
           >
-            Distribuer les Rôles &rarr;
+            Distribuer les Rôles →
           </button>
         </div>
       </div>

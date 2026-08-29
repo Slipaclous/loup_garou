@@ -232,7 +232,7 @@ export default function GameMasterPage() {
             }}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-900 via-amber-800 to-red-900 hover:opacity-95 text-white font-medieval font-bold text-sm uppercase tracking-wider shadow-2xl transition-all cursor-pointer border border-amber-600/50"
           >
-            Commencer une Nouvelle Traque &rarr;
+            Commencer une Nouvelle Traque →
           </button>
         </div>
       </div>
@@ -285,7 +285,7 @@ export default function GameMasterPage() {
               onClick={handleNextPlayer}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-900 via-amber-800 to-red-900 hover:opacity-95 text-white font-medieval font-bold text-xs shadow-xl uppercase tracking-wider cursor-pointer border border-amber-600/40"
             >
-              {revealIndex + 1 < players.length ? 'Âme Suivante &rarr;' : 'Tomber la Nuit 🌙'}
+              {revealIndex + 1 < players.length ? 'Âme Suivante →' : 'Tomber la Nuit 🌙'}
             </button>
           </div>
         </div>
@@ -398,7 +398,7 @@ export default function GameMasterPage() {
             }}
             className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-800 to-amber-700 hover:opacity-95 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg transition-all"
           >
-            Poursuivre la Séance &rarr;
+            Poursuivre la Séance →
           </button>
         </div>
       </div>
@@ -468,7 +468,7 @@ export default function GameMasterPage() {
                         }}
                         className="px-6 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 text-white font-medieval font-bold text-xs uppercase shadow-lg cursor-pointer animate-pulse"
                       >
-                        💥 Déclencher le Tir du Chasseur &rarr;
+                        💥 Déclencher le Tir du Chasseur →
                       </button>
                     )}
                   </div>
@@ -489,7 +489,7 @@ export default function GameMasterPage() {
             }}
             className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-amber-700 to-red-800 hover:opacity-90 text-white font-medieval font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer"
           >
-            Ouvrir le Tribunal du Bûcher &rarr;
+            Ouvrir le Tribunal du Bûcher →
           </button>
         </div>
       </div>
@@ -548,7 +548,7 @@ export default function GameMasterPage() {
               }}
               className="w-full py-3.5 rounded-xl bg-orange-700 hover:bg-orange-600 text-white font-medieval font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer"
             >
-              💥 Déclencher le Tir Fatal du Chasseur &rarr;
+              💥 Déclencher le Tir Fatal du Chasseur →
             </button>
           )}
 
@@ -560,7 +560,7 @@ export default function GameMasterPage() {
             }}
             className="px-8 py-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 font-medieval font-bold text-xs uppercase cursor-pointer border border-stone-700"
           >
-            Retourner au Tribunal &rarr;
+            Retourner au Tribunal →
           </button>
         </div>
       </div>
@@ -801,7 +801,7 @@ export default function GameMasterPage() {
               href="/setup"
               className="px-6 py-3 rounded-2xl bg-stone-900 border border-stone-700 text-stone-300 hover:text-white font-medieval font-bold text-xs"
             >
-              Paramétrer le Village &rarr;
+              Paramétrer le Village →
             </Link>
           </div>
         </div>
@@ -1122,14 +1122,14 @@ export default function GameMasterPage() {
                     onClick={() => goToStep(currentStepIndex + 1)}
                     className="px-6 py-2.5 rounded-xl bg-amber-700 hover:bg-amber-600 text-white font-medieval text-xs font-bold cursor-pointer shadow-lg"
                   >
-                    Rôle Suivant &rarr;
+                    Rôle Suivant →
                   </button>
                 ) : (
                   <button
                     onClick={handleWakeUpVillage}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-700 to-red-800 hover:opacity-90 text-white font-medieval text-xs font-bold cursor-pointer shadow-lg"
                   >
-                    ☀️ Lever du Jour sur le Village &rarr;
+                    ☀️ Lever du Jour sur le Village →
                   </button>
                 )}
               </div>
@@ -1154,7 +1154,7 @@ export default function GameMasterPage() {
                     onClick={handleSleepVillage}
                     className="px-5 py-2.5 rounded-xl bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-600/60 font-medieval text-xs font-bold cursor-pointer shadow-lg"
                   >
-                    🌙 Endormir le Village (Nuit Suivante) &rarr;
+                    🌙 Endormir le Village (Nuit Suivante) →
                   </button>
                 </div>
 

@@ -157,7 +157,7 @@ export default function PlayPage() {
               onClick={handleNextPlayer}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all uppercase tracking-wider font-mono cursor-pointer"
             >
-              {revealIndex + 1 < players.length ? 'Joueur Suivant &rarr;' : 'Terminer & Commencer la Nuit 🌙'}
+              {revealIndex + 1 < players.length ? 'Joueur Suivant →' : 'Terminer & Commencer la Nuit 🌙'}
             </button>
           </div>
         </div>
@@ -398,7 +398,7 @@ export default function PlayPage() {
               }}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-purple-600/30 cursor-pointer"
             >
-              Étape Suivante &rarr;
+              Étape Suivante →
             </button>
           </div>
         </div>
@@ -422,7 +422,7 @@ export default function PlayPage() {
           onClick={startVote}
           className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase font-mono shadow-lg shadow-amber-600/30 cursor-pointer"
         >
-          Ouvrir le Vote &rarr;
+          Ouvrir le Vote →
         </button>
       </div>
 

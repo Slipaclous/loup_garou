@@ -18,7 +18,7 @@ export default function NotFound() {
         href="/"
         className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-800 to-amber-700 text-white font-medieval font-bold text-xs uppercase tracking-wider shadow-lg"
       >
-        Retourner au Village &rarr;
+        Retourner au Village →
       </Link>
     </div>
   );
