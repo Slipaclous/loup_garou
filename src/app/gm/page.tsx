@@ -69,8 +69,8 @@ export default function GameMasterPage() {
   const hasLoversBeenChosen = players.filter(p => p.isLover).length >= 2 || targetLovers.length >= 2;
   const seerPlayer = players.find(p => p.role === 'seer');
   const guardPlayer = players.find(p => p.role === 'guard');
-  const isSeerPowerAvailable = seerPlayer?.isAlive && (!settings?.seerSingleUse || !seerPlayer?.hasUsedSeerPower);
-  const isGuardPowerAvailable = guardPlayer?.isAlive && (!settings?.guardSingleUse || !guardPlayer?.hasUsedGuardPower);
+  const isSeerPowerAvailable = Boolean(seerPlayer && seerPlayer.isAlive && (!settings?.seerSingleUse || !seerPlayer?.hasUsedSeerPower));
+  const isGuardPowerAvailable = Boolean(guardPlayer && guardPlayer.isAlive && (!settings?.guardSingleUse || !guardPlayer?.hasUsedGuardPower));
 
   useEffect(() => {
     setMounted(true);
@@ -636,18 +636,18 @@ export default function GameMasterPage() {
     {
       id: 'cupid',
       roleName: 'Cupidon',
-      title: '1. Cupidon — Les Liens Éternels',
+      title: 'Cupidon — Les Liens Éternels',
       script: '« Cupidon s\'éveille dans l\'obscurité et lie à jamais deux âmes au destin tragique... »',
       hint: 'Désignez les 2 amoureux puis effleurez-les discrètement.',
       roleDef: ROLES.cupid,
       soundAction: () => sounds.playArrow(),
       soundLabel: '💘 Flèche d\'Amour',
-      condition: !hasLoversBeenChosen && dayNumber <= 1 && players.some(p => p.role === 'cupid' && p.isAlive),
+      condition: Boolean(!hasLoversBeenChosen && dayNumber <= 1 && players.some(p => p.role === 'cupid' && p.isAlive)),
     },
     {
       id: 'guard',
       roleName: 'Salvateur',
-      title: '2. Salvateur — Bouclier Protecteur',
+      title: 'Salvateur — Bouclier Protecteur',
       script: '« Le Salvateur étend son manteau sacré sur l\'âme de son choix pour conjurer la mort... »',
       hint: settings?.guardSingleUse ? 'Action Unique pour la partie !' : 'Ne peut pas protéger la même personne deux nuits de suite.',
       roleDef: ROLES.guard,
@@ -658,7 +658,7 @@ export default function GameMasterPage() {
     {
       id: 'seer',
       roleName: 'Voyante',
-      title: '3. Voyante — Vision Astrale',
+      title: 'Voyante — Vision Astrale',
       script: '« La Voyante scrute le voile de l\'illusion et me désigne l\'âme dont elle veut sonder la nature... »',
       hint: settings?.seerSingleUse ? 'Action Unique pour la partie !' : 'Dévoilez-lui silencieusement la carte du joueur choisi.',
       roleDef: ROLES.seer,
@@ -669,26 +669,26 @@ export default function GameMasterPage() {
     {
       id: 'werewolf',
       roleName: 'Loups-Garous',
-      title: '4. Loups-Garous — La Chasse de Sang',
+      title: 'Loups-Garous — La Chasse de Sang',
       script: '« Les Loups-Garous ouvrent leurs yeux écarlates, se reconnaissent et choisissent leur proie... »',
       hint: 'Désignez en silence la victime choisie par la meute.',
       roleDef: ROLES.werewolf,
       soundAction: () => sounds.playWolfHowl(),
       soundLabel: '🐺 Hurlement Meute',
-      condition: players.some(p => (p.role === 'werewolf' || p.role === 'white_wolf') && p.isAlive),
+      condition: Boolean(players.some(p => (p.role === 'werewolf' || p.role === 'white_wolf') && p.isAlive)),
     },
     {
       id: 'witch',
       roleName: 'Sorcière',
-      title: '5. Sorcière — Les Fioles Maléfiques',
+      title: 'Sorcière — Les Fioles Maléfiques',
       script: '« La Sorcière s\'éveille... Veut-elle user de son élixir de résurrection ou verser son poison mortel ? »',
       hint: 'Chaque fiole est consommable une seule fois dans la partie !',
       roleDef: ROLES.witch,
       soundAction: () => sounds.playPotion(),
       soundLabel: '🧪 Potions',
-      condition: players.some(p => p.role === 'witch' && p.isAlive),
+      condition: Boolean(players.some(p => p.role === 'witch' && p.isAlive)),
     }
-  ].filter(s => s.condition !== false);
+  ].filter(s => Boolean(s.condition));
 
   const activeNightStep = nightStepsSequence[currentStepIndex] || nightStepsSequence[0];
 
@@ -953,7 +953,7 @@ export default function GameMasterPage() {
                       {activeNightStep.roleDef.subtitle}
                     </span>
                     <h2 className="text-2xl sm:text-3xl font-cinzel text-white font-bold mt-0.5">
-                      {activeNightStep.title}
+                      {currentStepIndex + 1}. {activeNightStep.title}
                     </h2>
                   </div>
 
