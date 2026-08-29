@@ -51,19 +51,18 @@ export const Navbar: React.FC = () => {
             🎭 Autel du MJ
           </Link>
 
-          {phase !== 'SETUP' && (
-            <button
-              onClick={() => {
-                if (confirm('Abandonner la traque et réinitialiser le village ?')) {
-                  resetGame();
-                  window.location.href = '/setup';
-                }
-              }}
-              className="px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-950/60 border border-red-900/40 rounded-lg transition-colors font-mono cursor-pointer"
-            >
-              Reset
-            </button>
-          )}
+          {/* Bouton Réinitialiser Toujours Accessible */}
+          <button
+            onClick={() => {
+              if (confirm('Abandonner la traque et réinitialiser la partie du village ?')) {
+                resetGame();
+                window.location.href = '/setup';
+              }
+            }}
+            className="px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-800/80 text-red-200 text-[11px] font-medieval font-bold transition-all shadow cursor-pointer"
+          >
+            🔄 Réinitialiser
+          </button>
 
           <button
             onClick={toggleSound}

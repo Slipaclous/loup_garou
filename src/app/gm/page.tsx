@@ -844,6 +844,17 @@ export default function GameMasterPage() {
           >
             💥 Mousquet
           </button>
+          <button
+            onClick={() => {
+              if (confirm('Abandonner la traque et réinitialiser la partie du village ?')) {
+                resetGame();
+                window.location.href = '/setup';
+              }
+            }}
+            className="px-3 py-2 rounded-lg bg-red-950 hover:bg-red-900 border border-red-800 text-red-200 text-xs font-medieval font-bold transition-all cursor-pointer shadow"
+          >
+            🔄 Reset
+          </button>
         </div>
       </div>
 
