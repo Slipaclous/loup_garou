@@ -100,7 +100,42 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 2. CLOCHE DU VILLAGE
+  // 2. MORSURE / DÉCHIQUETAGE DU LOUP-GAROU
+  playBite() {
+    this.playSoundFile('bite.mp3', () => {
+      this.playDeath();
+    });
+  }
+
+  // 3. FLÈCHE DE CUPIDON
+  playArrow() {
+    this.playSoundFile('arrow.mp3', () => {
+      this.playMagicChime();
+    });
+  }
+
+  // 4. MURMURE DE LA VOYANTE (VISION ASTRALE)
+  playWhisper() {
+    this.playSoundFile('whisper.mp3', () => {
+      this.playMagicChime();
+    });
+  }
+
+  // 5. BÛCHER / CRÉPITEMENT DE FEU (CONDAMNATION DU JOUR)
+  playFire() {
+    this.playSoundFile('fire.mp3', () => {
+      this.playDeath();
+    });
+  }
+
+  // 6. RETOURNEMENT DE CARTE 3D
+  playCardFlip() {
+    this.playSoundFile('card-flipping.mp3', () => {
+      this.playClick();
+    }, 0.6);
+  }
+
+  // 7. CLOCHE DU VILLAGE
   playBell() {
     this.playSoundFile('bell.mp3', () => {
       const ctx = this.getContext();
@@ -122,7 +157,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 3. TIR DU CHASSEUR
+  // 8. TIR DU CHASSEUR
   playGunshot() {
     this.playSoundFile('gunshot.mp3', () => {
       const ctx = this.getContext();
@@ -143,7 +178,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 4. MORT / GLAS FUNÈBRE
+  // 9. MORT / GLAS FUNÈBRE
   playDeath() {
     this.playSoundFile('death.mp3', () => {
       const ctx = this.getContext();
@@ -162,7 +197,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 5. CARILLON MAGIQUE (Cupidon / Voyante)
+  // 10. CARILLON MAGIQUE
   playMagicChime() {
     this.playSoundFile('magic.mp3', () => {
       const ctx = this.getContext();
@@ -185,7 +220,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 6. POTION DE LA SORCIÈRE
+  // 11. POTION DE LA SORCIÈRE
   playPotion() {
     this.playSoundFile('potion.mp3', () => {
       const ctx = this.getContext();
@@ -208,7 +243,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 6.bis BOUCLIER DU SALVATEUR
+  // 12. BOUCLIER DU SALVATEUR
   playShield() {
     this.playSoundFile('shield.mp3', () => {
       const ctx = this.getContext();
@@ -228,7 +263,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 7. BATTEMENT DE COEUR (CHRONO / ANGOISSE)
+  // 13. BATTEMENT DE COEUR (CHRONO / ANGOISSE)
   playHeartbeat() {
     if (this.isMuted) return;
     const ctx = this.getContext();
@@ -252,7 +287,7 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 8. GONG DU TRIBUNAL
+  // 14. GONG DU TRIBUNAL
   playGong() {
     if (this.isMuted) return;
     const ctx = this.getContext();

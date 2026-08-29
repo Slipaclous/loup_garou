@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { RoleId, ROLES } from '@/lib/roles';
+import { sounds } from '@/lib/sound';
 
 interface RoleCardProps {
   roleId: RoleId;
@@ -43,16 +44,23 @@ export const RoleCard: React.FC<RoleCardProps> = ({
     lg: 'w-80 h-120 sm:w-88 sm:h-130',
   }[size];
 
+  const handleClick = () => {
+    sounds.playCardFlip();
+    if (onToggleReveal) {
+      onToggleReveal();
+    }
+  };
+
   return (
     <div
-      onClick={onToggleReveal}
+      onClick={handleClick}
       className={`perspective-container ${sizeClasses} cursor-pointer group select-none ${className}`}
     >
       <div className={`flipper ${isRevealed ? 'flipped' : ''}`}>
         {/* ========================================================================= */}
         {/* DOS DE LA CARTE : SCEAU OCCULTE HD & PARCHEMIN GOTHIQUE */}
         {/* ========================================================================= */}
-        <div className="front bg-[#090508] border-2 border-amber-800/80 rounded-3xl p-3 flex flex-col items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.95)] candle-glow overflow-hidden relative">
+        <div className="front bg-[#090508] border-2 border-stone-700 rounded-3xl p-3 flex flex-col items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.95)] overflow-hidden relative">
           {/* Illustration du Dos de Carte */}
           <div className="absolute inset-0 z-0">
             <img
@@ -65,7 +73,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
           {/* En-tête joueur sur parchemin sombre */}
           <div className="w-full text-center space-y-1 z-10 pt-4 px-3">
-            <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block font-bold drop-shadow">
+            <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest block font-bold drop-shadow">
               ✦ Sceau du Destin ✦
             </span>
             <h3 className="font-medieval text-2xl sm:text-3xl text-white font-bold tracking-wide truncate max-w-full drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
@@ -75,8 +83,8 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
           {/* Pied de carte */}
           <div className="w-full text-center z-10 pb-4 px-3">
-            <div className="py-2 px-4 rounded-xl bg-black/80 border border-amber-600/50 backdrop-blur-sm shadow-xl">
-              <span className="text-[11px] font-medieval text-amber-300 group-hover:text-amber-100 transition-colors uppercase tracking-wider block font-bold">
+            <div className="py-2 px-4 rounded-xl bg-black/80 border border-stone-700 backdrop-blur-sm shadow-xl">
+              <span className="text-[11px] font-medieval text-stone-300 group-hover:text-white transition-colors uppercase tracking-wider block font-bold">
                 ⚰️ Touchez pour dévoiler l'Âme ⚰️
               </span>
             </div>
@@ -87,8 +95,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
         {/* FACE DE LA CARTE : ARTWORK HD DARK FANTASY & POUVOIR GOTHIC */}
         {/* ========================================================================= */}
         <div 
-          className="back bg-[#080407] border-2 rounded-3xl p-3 flex flex-col items-center justify-between shadow-[0_20px_55px_rgba(0,0,0,0.95)] overflow-hidden relative"
-          style={{ borderColor: role.color, boxShadow: `0 0 35px ${role.color}35` }}
+          className="back bg-[#080407] border-2 rounded-3xl p-3 flex flex-col items-center justify-between shadow-[0_20px_55px_rgba(0,0,0,0.95)] overflow-hidden relative border-stone-700"
         >
           {/* Peinture Dark Fantasy HD en Arrière-plan */}
           <div className="absolute inset-0 z-0">
@@ -103,8 +110,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
           {/* En-tête Rôle */}
           <div className="w-full text-center space-y-1.5 z-10 pt-4 px-3">
             <span 
-              className="text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border shadow-lg backdrop-blur-md"
-              style={{ backgroundColor: `${role.color}30`, borderColor: `${role.color}80`, color: role.color }}
+              className="text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-stone-700 bg-black/80 text-stone-300 shadow-lg backdrop-blur-md"
             >
               {role.team === 'WEREWOLVES' ? '🐺 Meute des Loups' : role.team === 'SOLO' ? '⚡ Solitaire' : '🛡️ Villageois'}
             </span>
@@ -115,7 +121,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
           {/* Description du Pouvoir en bas de carte */}
           <div className="w-full text-center space-y-1.5 z-10 pb-3 px-3">
-            <div className="p-3 bg-black/85 border border-white/15 rounded-2xl backdrop-blur-md shadow-2xl">
+            <div className="p-3 bg-black/85 border border-stone-800 rounded-2xl backdrop-blur-md shadow-2xl">
               <p className="text-[11px] sm:text-xs text-stone-200 leading-snug font-serif italic">
                 « {role.shortDesc} »
               </p>

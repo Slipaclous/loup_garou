@@ -139,6 +139,7 @@ export default function GameMasterPage() {
   };
 
   const handleExecutePlayer = (p: Player) => {
+    sounds.playFire();
     eliminatePlayer(p.id, 'Condamné et brûlé sur la place publique par le village.');
     setExecutedPlayer(p);
     setIsDayCardFlipped(false);
@@ -639,8 +640,8 @@ export default function GameMasterPage() {
       script: '« Cupidon s\'éveille dans l\'obscurité et lie à jamais deux âmes au destin tragique... »',
       hint: 'Désignez les 2 amoureux puis effleurez-les discrètement.',
       roleDef: ROLES.cupid,
-      soundAction: () => sounds.playMagicChime(),
-      soundLabel: '✨ Magie Cupidon',
+      soundAction: () => sounds.playArrow(),
+      soundLabel: '💘 Flèche d\'Amour',
       condition: !hasLoversBeenChosen && dayNumber <= 1 && players.some(p => p.role === 'cupid' && p.isAlive),
     },
     {
@@ -661,8 +662,8 @@ export default function GameMasterPage() {
       script: '« La Voyante scrute le voile de l\'illusion et me désigne l\'âme dont elle veut sonder la nature... »',
       hint: settings?.seerSingleUse ? 'Action Unique pour la partie !' : 'Dévoilez-lui silencieusement la carte du joueur choisi.',
       roleDef: ROLES.seer,
-      soundAction: () => sounds.playMagicChime(),
-      soundLabel: '🔮 Oeil Astral',
+      soundAction: () => sounds.playWhisper(),
+      soundLabel: '🔮 Murmure Astral',
       condition: isSeerPowerAvailable,
     },
     {
@@ -987,7 +988,7 @@ export default function GameMasterPage() {
                               setTargetLovers(next);
                               if (next.length === 2) {
                                 setNightCupidLovers(next[0], next[1]);
-                                sounds.playMagicChime();
+                                sounds.playArrow();
                               }
                             }}
                             className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
@@ -1051,7 +1052,7 @@ export default function GameMasterPage() {
                               const updated = players.map(pl => pl.role === 'seer' ? { ...pl, hasUsedSeerPower: true } : pl);
                               useGameStore.setState({ players: updated });
                             }
-                            sounds.playMagicChime();
+                            sounds.playWhisper();
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
@@ -1077,7 +1078,7 @@ export default function GameMasterPage() {
                           key={p.id}
                           onClick={() => {
                             setTargetWolf(p.id);
-                            sounds.playWolfHowl();
+                            sounds.playBite();
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
