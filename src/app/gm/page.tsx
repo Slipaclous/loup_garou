@@ -205,7 +205,7 @@ export default function GameMasterPage() {
       } else {
         setIsRevealingRoles(false);
         setActiveCycleTab('NIGHT');
-        sounds.playWolfHowl();
+        setCurrentStepIndex(0);
         sounds.startNightLoop();
       }
     };
@@ -649,11 +649,10 @@ export default function GameMasterPage() {
     setIsMorningRevealActive(true);
   };
 
-  // Passer à la Nuit Suivante avec hurlement d'appel
+  // Passer à la Nuit Suivante (Seule la musique de nuit démarre, pas de hurlement intempestif)
   const handleSleepVillage = () => {
-    sounds.playWolfHowl();
     setActiveCycleTab('NIGHT');
-    goToStep(0);
+    setCurrentStepIndex(0);
     setTargetWolf(null);
     setTargetGuard(null);
     setWitchHeals(false);
