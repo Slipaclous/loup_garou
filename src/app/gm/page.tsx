@@ -27,6 +27,9 @@ export default function GameMasterPage() {
   const [revealIndex, setRevealIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
 
+  // Modal Tir de vengeance du Chasseur (Prioritaire)
+  const [hunterShootingPlayer, setHunterShootingPlayer] = useState<Player | null>(null);
+
   // Écran de révélation des morts du matin
   const [isMorningRevealActive, setIsMorningRevealActive] = useState(false);
   const [morningDeaths, setMorningDeaths] = useState<{ player: Player; roleDef: typeof ROLES.werewolf; reason: string }[]>([]);
@@ -36,9 +39,6 @@ export default function GameMasterPage() {
   const [isDayVoteRevealActive, setIsDayVoteRevealActive] = useState(false);
   const [executedPlayer, setExecutedPlayer] = useState<Player | null>(null);
   const [isDayCardFlipped, setIsDayCardFlipped] = useState(false);
-
-  // Modal Tir de vengeance du Chasseur
-  const [hunterShootingPlayer, setHunterShootingPlayer] = useState<Player | null>(null);
 
   // Navigation séquentielle Jour par Jour (Step-by-step)
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -61,7 +61,7 @@ export default function GameMasterPage() {
 
   // Déclenchement automatique de la boucle audio nocturne
   useEffect(() => {
-    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive) {
+    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer) {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
@@ -69,7 +69,7 @@ export default function GameMasterPage() {
     return () => {
       sounds.stopNightLoop();
     };
-  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive]);
+  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer]);
 
   const handleQuickDemoGame = () => {
     useGameStore.setState({
@@ -194,7 +194,70 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 2. RÉVÉLATION CINÉMATIQUE DU MATIN (RETOURNEZ L'ÉCRAN)
+  // 2. MODAL TIR DU CHASSEUR (PRIORITÉ ABSOLUE)
+  // =========================================================================
+  if (hunterShootingPlayer) {
+    const targets = livingPlayers.filter(p => p.id !== hunterShootingPlayer.id);
+
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
+        <div className="w-full bg-[#1a0f08] border-2 border-orange-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl shadow-orange-950/60 animate-fadeIn">
+          <div className="w-16 h-16 rounded-2xl bg-orange-600/20 border border-orange-500 flex items-center justify-center text-3xl shadow-lg">
+            💥
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
+              Tir Fatal du Chasseur
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-display text-white font-bold">
+              {hunterShootingPlayer.name} a été abattu !
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+              Dans son dernier râle d'agonie, le Chasseur dégaine son mousquet et désigne la personne qu'il emporte avec lui dans la tombe :
+            </p>
+          </div>
+
+          <div className="w-full space-y-3 pt-2">
+            <span className="text-xs font-mono text-orange-300 uppercase font-bold block">
+              Touchez la cible à éliminer ({targets.length} cibles possibles) :
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {targets.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    sounds.playGunshot();
+                    resolveHunterShot(p.id);
+                    setHunterShootingPlayer(null);
+                    setIsDayVoteRevealActive(false);
+                    setIsMorningRevealActive(false);
+                    setExecutedPlayer(null);
+                  }}
+                  className="p-4 bg-[#23150d] border border-orange-500/50 hover:border-orange-400 hover:bg-orange-950 rounded-2xl text-xs font-bold text-orange-100 truncate transition-all cursor-pointer shadow-lg hover:scale-105"
+                >
+                  <span className="block text-sm text-white mb-0.5">{p.name}</span>
+                  <span className="text-[10px] text-orange-400 font-mono">Abattre 🎯</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setHunterShootingPlayer(null);
+            }}
+            className="text-xs text-slate-400 hover:text-slate-200 font-mono transition-colors cursor-pointer pt-2"
+          >
+            Fermer sans tirer &rarr;
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 3. RÉVÉLATION CINÉMATIQUE DU MATIN (RETOURNEZ L'ÉCRAN)
   // =========================================================================
   if (isMorningRevealActive) {
     return (
@@ -218,6 +281,7 @@ export default function GameMasterPage() {
             <div className="space-y-6 w-full flex flex-col items-center">
               {morningDeaths.map((d, index) => {
                 const isFlipped = morningDeathCardFlipped[d.player.id] || false;
+                const isHunter = d.player.role === 'hunter';
                 return (
                   <div key={d.player.id} className="flex flex-col items-center space-y-3 w-full">
                     <div className="text-center">
@@ -245,10 +309,6 @@ export default function GameMasterPage() {
                         });
                         if (nextFlipped) {
                           sounds.playDeath();
-                          // Si c'est le chasseur qui est mort la nuit -> Activer le tir
-                          if (d.player.role === 'hunter') {
-                            setTimeout(() => setHunterShootingPlayer(d.player), 1200);
-                          }
                         }
                       }}
                       size="lg"
@@ -259,6 +319,18 @@ export default function GameMasterPage() {
                         <p><strong>{d.player.name}</strong> ({d.roleDef.name})</p>
                         <p className="text-[11px] text-red-300/80 mt-0.5">{d.reason}</p>
                       </div>
+                    )}
+
+                    {isFlipped && isHunter && (
+                      <button
+                        onClick={() => {
+                          setIsMorningRevealActive(false);
+                          setHunterShootingPlayer(d.player);
+                        }}
+                        className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase font-mono shadow-lg shadow-orange-600/30 cursor-pointer animate-pulse"
+                      >
+                        💥 Déclencher le Tir du Chasseur &rarr;
+                      </button>
                     )}
                   </div>
                 );
@@ -286,7 +358,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 3. RÉVÉLATION CINÉMATIQUE DU CONDAMNÉ DU BÛCHER (VOTE DE JOUR)
+  // 4. RÉVÉLATION CINÉMATIQUE DU CONDAMNÉ DU BÛCHER (VOTE DE JOUR)
   // =========================================================================
   if (isDayVoteRevealActive && executedPlayer) {
     const roleDef = ROLES[executedPlayer.role] || ROLES.villager;
@@ -318,9 +390,6 @@ export default function GameMasterPage() {
               setIsDayCardFlipped(next);
               if (next) {
                 sounds.playDeath();
-                if (isHunter) {
-                  setTimeout(() => setHunterShootingPlayer(executedPlayer), 1200);
-                }
               }
             }}
             size="lg"
@@ -336,23 +405,23 @@ export default function GameMasterPage() {
             </div>
           )}
 
-          {/* Si c'est le chasseur, message d'alerte tir */}
+          {/* Si c'est le chasseur, bouton de tir bien visible */}
           {isDayCardFlipped && isHunter && (
-            <div className="p-4 bg-orange-950/80 border-2 border-orange-500 rounded-2xl text-xs text-orange-200 font-mono font-bold space-y-2 w-full max-w-md">
-              <span>🎯 LE CHASSEUR A LE TEMPS D'ABATTRE QUELQU'UN DANS SON DERNIER SOUFFLE !</span>
+            <div className="p-4 bg-orange-950/80 border-2 border-orange-500 rounded-2xl text-xs text-orange-200 font-mono font-bold space-y-3 w-full max-w-md">
+              <span className="block">🎯 LE CHASSEUR A LE TEMPS D'ABATTRE QUELQU'UN DANS SON DERNIER SOUFFLE !</span>
+              <button
+                onClick={() => {
+                  setIsDayVoteRevealActive(false);
+                  setHunterShootingPlayer(executedPlayer);
+                }}
+                className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-orange-600/40 cursor-pointer transition-all"
+              >
+                💥 Faire Tirer le Chasseur &rarr;
+              </button>
             </div>
           )}
 
           <div className="flex flex-wrap gap-3 justify-center">
-            {isDayCardFlipped && isHunter && (
-              <button
-                onClick={() => setHunterShootingPlayer(executedPlayer)}
-                className="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-orange-600/30 cursor-pointer"
-              >
-                💥 Faire Tirer le Chasseur &rarr;
-              </button>
-            )}
-
             <button
               onClick={() => {
                 setIsDayVoteRevealActive(false);
@@ -364,59 +433,6 @@ export default function GameMasterPage() {
               Retourner au Tribunal &rarr;
             </button>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // 4. MODAL TIR DU CHASSEUR
-  // =========================================================================
-  if (hunterShootingPlayer) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
-        <div className="w-full bg-[#18110b] border-2 border-orange-500 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl shadow-orange-950/50">
-          <div className="space-y-1">
-            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
-              💥 Tir Ultime du Chasseur
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-display text-white font-bold">
-              {hunterShootingPlayer.name} dégaine son fusil !
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300">
-              « {hunterShootingPlayer.name} a été abattu mais dans son dernier râle, il choisit sa cible... »
-            </p>
-          </div>
-
-          <div className="w-full space-y-3">
-            <span className="text-xs font-mono text-orange-300 uppercase font-bold block">
-              Désignez le joueur à abattre :
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {livingPlayers.filter(p => p.id !== hunterShootingPlayer.id).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    resolveHunterShot(p.id);
-                    sounds.playGunshot();
-                    setHunterShootingPlayer(null);
-                    setIsDayVoteRevealActive(false);
-                    setExecutedPlayer(null);
-                  }}
-                  className="p-3.5 bg-black/60 border border-orange-500/40 hover:border-orange-500 hover:bg-orange-950/60 rounded-xl text-xs font-bold text-orange-200 truncate transition-all cursor-pointer shadow"
-                >
-                  Abattre {p.name} 💥
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setHunterShootingPlayer(null)}
-            className="text-xs text-slate-500 hover:text-slate-300 font-mono transition-colors cursor-pointer"
-          >
-            Annuler le tir &rarr;
-          </button>
         </div>
       </div>
     );
@@ -1012,7 +1028,7 @@ export default function GameMasterPage() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Laissez les villageois débattre et voter. Lorsqu'un joueur est désigné par le vote populaire, cliquez sur <strong>Condamner au Bûcher</strong> pour afficher sa révélation à toute la table.
+                  Laissez les villageois débattre et voter. Lorsqu'un joueur est désigné par le vote populaire, cliquez sur <strong>Condamner</strong> pour afficher sa révélation à toute la table.
                 </p>
               </div>
 
