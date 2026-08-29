@@ -37,6 +37,10 @@ export default function GameMasterPage() {
   const [hunterVictimPlayer, setHunterVictimPlayer] = useState<Player | null>(null);
   const [isHunterVictimFlipped, setIsHunterVictimFlipped] = useState(false);
 
+  // Révélation Secrète de la Voyante pendant la Nuit
+  const [seerTargetPlayer, setSeerTargetPlayer] = useState<Player | null>(null);
+  const [isSeerCardFlipped, setIsSeerCardFlipped] = useState(false);
+
   // Révélations Matin et Jour
   const [isMorningRevealActive, setIsMorningRevealActive] = useState(false);
   const [morningDeaths, setMorningDeaths] = useState<{ player: Player; roleDef: typeof ROLES.werewolf; reason: string }[]>([]);
@@ -101,13 +105,13 @@ export default function GameMasterPage() {
   }, [phase, winner]);
 
   useEffect(() => {
-    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer && !hunterVictimPlayer && phase !== 'GAME_OVER') {
+    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer && !hunterVictimPlayer && !seerTargetPlayer && phase !== 'GAME_OVER') {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
     }
     return () => sounds.stopNightLoop();
-  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer, hunterVictimPlayer, phase]);
+  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer, hunterVictimPlayer, seerTargetPlayer, phase]);
 
   const handleQuickDemoGame = () => {
     useGameStore.setState({
@@ -399,6 +403,65 @@ export default function GameMasterPage() {
             className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-800 to-amber-700 hover:opacity-95 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg transition-all"
           >
             Poursuivre la Séance →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 3. RÉVÉLATION SECRÈTE DE LA VOYANTE (CARTE FLIPPABLE PENDANT LA NUIT)
+  // =========================================================================
+  if (seerTargetPlayer) {
+    const roleDef = ROLES[seerTargetPlayer.role] || ROLES.villager;
+
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6 animate-fadeIn">
+        <div className="w-full bg-gradient-to-b from-[#180a18] via-[#0d050d] to-[#040104] border-2 border-purple-500/70 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-[0_0_50px_rgba(168,85,247,0.3)] candle-glow">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-purple-400 uppercase tracking-widest font-bold">
+              🔮 Vision Astrale & Sonde d'Âme
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
+              {isSeerCardFlipped ? `Identité de ${seerTargetPlayer.name}` : 'Sonde Astrale'}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-300">
+              {isSeerCardFlipped 
+                ? `La boule de cristal dévoile la véritable nature de l'âme sondée :` 
+                : `Tournez discrètement l'écran vers la Voyante et touchez la carte pour lui dévoiler son identité :`}
+            </p>
+          </div>
+
+          <RoleCard
+            roleId={seerTargetPlayer.role}
+            playerName={isSeerCardFlipped ? seerTargetPlayer.name : `Âme de ${seerTargetPlayer.name}`}
+            isRevealed={isSeerCardFlipped}
+            onToggleReveal={() => {
+              const next = !isSeerCardFlipped;
+              setIsSeerCardFlipped(next);
+              if (next) sounds.playMagicChime();
+            }}
+            size="lg"
+          />
+
+          {isSeerCardFlipped && (
+            <div className="p-4 bg-black/80 border-2 rounded-2xl text-center space-y-1 max-w-md w-full shadow-lg" style={{ borderColor: roleDef.color }}>
+              <span className="text-xs font-medieval font-bold uppercase" style={{ color: roleDef.color }}>
+                {roleDef.team === 'WEREWOLVES' ? '🐺 Engeance Démoniaque' : roleDef.team === 'SOLO' ? '⚡ Entité Solitaire' : '🛡️ Villageois Pur'}
+              </span>
+              <h4 className="text-xl font-cinzel font-bold text-white">{seerTargetPlayer.name} est {roleDef.name}</h4>
+              <p className="text-xs text-stone-400 italic pt-1 font-serif">{roleDef.shortDesc}</p>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              setSeerTargetPlayer(null);
+              setIsSeerCardFlipped(false);
+            }}
+            className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-700 hover:opacity-95 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg transition-all"
+          >
+            Masquer & Poursuivre la Nuit →
           </button>
         </div>
       </div>
@@ -713,6 +776,7 @@ export default function GameMasterPage() {
     setWitchHeals(false);
     setWitchKillsId(null);
     setSeerTargetId(null);
+    setSeerTargetPlayer(null);
     setIsMorningRevealActive(false);
     setIsDayVoteRevealActive(false);
     setHunterShootingPlayer(null);
@@ -976,7 +1040,7 @@ export default function GameMasterPage() {
                   </div>
                 )}
 
-                {/* VOYANTE */}
+                {/* VOYANTE : CLIC = OUVERTURE DE LA RÉVÉLATION SECRÈTE */}
                 {activeNightStep.id === 'seer' && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {livingPlayers.map((p) => {
@@ -987,6 +1051,8 @@ export default function GameMasterPage() {
                           key={p.id}
                           onClick={() => {
                             setSeerTargetId(p.id);
+                            setSeerTargetPlayer(p);
+                            setIsSeerCardFlipped(false);
                             if (settings?.seerSingleUse && seerPlayer) {
                               const updated = players.map(pl => pl.role === 'seer' ? { ...pl, hasUsedSeerPower: true } : pl);
                               useGameStore.setState({ players: updated });
@@ -1000,7 +1066,7 @@ export default function GameMasterPage() {
                           }`}
                         >
                           <span className="truncate block">{p.name}</span>
-                          {isSelected && <span className="text-purple-300 text-[10px] block mt-0.5">🔮 {role.name}</span>}
+                          <span className="text-purple-300 text-[10px] block mt-0.5">🔮 Dévoiler la carte</span>
                         </button>
                       );
                     })}
