@@ -31,7 +31,13 @@ export default function GameMasterPage() {
   const [isRevealingRoles, setIsRevealingRoles] = useState(false);
   const [revealIndex, setRevealIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  
+  // Tir du Chasseur + Révélation de la Victime du Chasseur
   const [hunterShootingPlayer, setHunterShootingPlayer] = useState<Player | null>(null);
+  const [hunterVictimPlayer, setHunterVictimPlayer] = useState<Player | null>(null);
+  const [isHunterVictimFlipped, setIsHunterVictimFlipped] = useState(false);
+
+  // Révélations Matin et Jour
   const [isMorningRevealActive, setIsMorningRevealActive] = useState(false);
   const [morningDeaths, setMorningDeaths] = useState<{ player: Player; roleDef: typeof ROLES.werewolf; reason: string }[]>([]);
   const [morningDeathCardFlipped, setMorningDeathCardFlipped] = useState<Record<string, boolean>>({});
@@ -44,7 +50,7 @@ export default function GameMasterPage() {
   const [activeCycleTab, setActiveCycleTab] = useState<'NIGHT' | 'DAY'>('NIGHT');
   
   // Sablier du Tribunal & Débats
-  const [timerDuration, setTimerDuration] = useState(120); // 120s par défaut
+  const [timerDuration, setTimerDuration] = useState(120);
   const [timerSeconds, setTimerSeconds] = useState(120);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -73,7 +79,6 @@ export default function GameMasterPage() {
       interval = setInterval(() => {
         setTimerSeconds((prev) => {
           const next = prev - 1;
-          // Battement de coeur oppressant dans les 15 dernières secondes
           if (next <= 15 && next > 0) {
             sounds.playHeartbeat();
           }
@@ -96,13 +101,13 @@ export default function GameMasterPage() {
   }, [phase, winner]);
 
   useEffect(() => {
-    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer && phase !== 'GAME_OVER') {
+    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer && !hunterVictimPlayer && phase !== 'GAME_OVER') {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
     }
     return () => sounds.stopNightLoop();
-  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer, phase]);
+  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer, hunterVictimPlayer, phase]);
 
   const handleQuickDemoGame = () => {
     useGameStore.setState({
@@ -166,14 +171,12 @@ export default function GameMasterPage() {
   const deadPlayers = (players || []).filter((p) => !p.isAlive);
   const witchPlayer = players.find((p) => p.role === 'witch');
 
-  // Formatage mm:ss
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Pourcentage dégressif pour l'anneau de feu du sablier
   const timerPercentage = (timerSeconds / timerDuration) * 100;
 
   // =========================================================================
@@ -291,7 +294,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // TIR DU CHASSEUR
+  // 1. MODAL DU TIR DU CHASSEUR : SÉLECTION DE LA CIBLE
   // =========================================================================
   if (hunterShootingPlayer) {
     const targets = livingPlayers.filter(p => p.id !== hunterShootingPlayer.id);
@@ -323,6 +326,8 @@ export default function GameMasterPage() {
                   onClick={() => {
                     sounds.playGunshot();
                     resolveHunterShot(p.id);
+                    setHunterVictimPlayer(p);
+                    setIsHunterVictimFlipped(false);
                     setHunterShootingPlayer(null);
                     setIsDayVoteRevealActive(false);
                     setIsMorningRevealActive(false);
@@ -336,6 +341,65 @@ export default function GameMasterPage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 2. RÉVÉLATION DE LA VICTIME DU CHASSEUR (CARTE RETOURNÉE)
+  // =========================================================================
+  if (hunterVictimPlayer) {
+    const roleDef = ROLES[hunterVictimPlayer.role] || ROLES.villager;
+
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6 animate-fadeIn">
+        <div className="w-full bg-gradient-to-b from-[#220d09] via-[#0d0504] to-[#040101] border-2 border-orange-600/70 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl candle-glow">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-orange-400 uppercase tracking-widest font-bold">
+              💥 Balle Fatale du Chasseur
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-cinzel text-white font-bold">
+              {isHunterVictimFlipped ? `${hunterVictimPlayer.name} a succombé` : 'La Cible du Chasseur'}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-300">
+              {isHunterVictimFlipped 
+                ? `Le mousquet du chasseur a transpercé :` 
+                : `Tournez l'écran vers le village et touchez la carte pour découvrir l'identité de ${hunterVictimPlayer.name} :`}
+            </p>
+          </div>
+
+          <RoleCard
+            roleId={hunterVictimPlayer.role}
+            playerName={isHunterVictimFlipped ? hunterVictimPlayer.name : 'Victime du Tir'}
+            isRevealed={isHunterVictimFlipped}
+            onToggleReveal={() => {
+              const next = !isHunterVictimFlipped;
+              setIsHunterVictimFlipped(next);
+              if (next) sounds.playDeath();
+            }}
+            size="lg"
+          />
+
+          {isHunterVictimFlipped && (
+            <div className="p-4 bg-black/80 border-2 rounded-2xl text-center space-y-1 max-w-md w-full shadow-lg" style={{ borderColor: roleDef.color }}>
+              <span className="text-xs font-medieval font-bold uppercase" style={{ color: roleDef.color }}>
+                {roleDef.team === 'WEREWOLVES' ? '🐺 Une Bête Abattue !' : '🛡️ Un Innocent Frappé par la Balle...'}
+              </span>
+              <h4 className="text-xl font-cinzel font-bold text-white">{hunterVictimPlayer.name} était {roleDef.name}</h4>
+              <p className="text-xs text-stone-400 italic pt-1 font-serif">{roleDef.shortDesc}</p>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              setHunterVictimPlayer(null);
+              setIsHunterVictimFlipped(false);
+            }}
+            className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-800 to-amber-700 hover:opacity-95 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg transition-all"
+          >
+            Poursuivre la Séance &rarr;
+          </button>
         </div>
       </div>
     );
@@ -652,13 +716,14 @@ export default function GameMasterPage() {
     setIsMorningRevealActive(false);
     setIsDayVoteRevealActive(false);
     setHunterShootingPlayer(null);
+    setHunterVictimPlayer(null);
     setIsTimerRunning(false);
   };
 
   return (
     <div className="flex-1 flex flex-col px-4 sm:px-8 py-8 max-w-6xl mx-auto w-full space-y-8 relative z-10">
       {/* ========================================================================= */}
-      {/* 1. AUTEL SUPRÊME DU CONTEUR (HEADER IMMERSIF) */}
+      {/* 1. AUTEL DU CONTEUR */}
       {/* ========================================================================= */}
       <div className="bg-gradient-to-r from-[#1c0b13] via-[#0e060c] to-[#070306] border-2 border-amber-700/60 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_10px_40px_rgba(0,0,0,0.9)] candle-glow relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-800/10 rounded-full blur-3xl pointer-events-none" />
@@ -679,7 +744,7 @@ export default function GameMasterPage() {
           </h1>
         </div>
 
-        {/* Console Analogique de Bruitages */}
+        {/* Console de Sons */}
         <div className="flex flex-wrap items-center gap-2 z-10">
           <button
             onClick={() => {
@@ -742,9 +807,7 @@ export default function GameMasterPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* ========================================================================= */}
-          {/* 2. SÉLECTEUR DE PHASE TEMPORELLE (NUIT vs JOUR) */}
-          {/* ========================================================================= */}
+          {/* SÉLECTEUR DE PHASE */}
           <div className="flex items-center justify-between bg-gradient-to-r from-[#140b12] to-[#080407] p-2.5 rounded-2xl border-2 border-stone-800/80 font-medieval text-xs shadow-xl">
             <div className="flex items-center gap-2">
               <button
@@ -777,15 +840,12 @@ export default function GameMasterPage() {
             </span>
           </div>
 
-          {/* ========================================================================= */}
-          {/* 3. VUE SÉQUENTIELLE DE NUIT */}
-          {/* ========================================================================= */}
+          {/* VUE DE NUIT */}
           {activeCycleTab === 'NIGHT' && activeNightStep && (
             <div 
               className="bg-gradient-to-b from-[#160b14] via-[#0c050a] to-[#050204] border-2 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl candle-glow" 
               style={{ borderColor: activeNightStep.roleDef.color }}
             >
-              {/* Fil d'Ariane Rituel */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-800 pb-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {nightStepsSequence.map((step, idx) => (
@@ -811,7 +871,6 @@ export default function GameMasterPage() {
                 </button>
               </div>
 
-              {/* Panneau Principal de l'Entité Active */}
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <div className="w-40 h-40 shrink-0 bg-black/80 rounded-2xl border-2 border-white/10 p-3 flex items-center justify-center shadow-2xl">
                   <RoleArtwork roleId={activeNightStep.roleDef.id} className="w-full h-full drop-shadow-[0_0_20px_rgba(255,255,255,0.25)]" />
@@ -839,13 +898,13 @@ export default function GameMasterPage() {
                 </div>
               </div>
 
-              {/* Sélection Interactive des Cibles */}
+              {/* Sélection Interactive */}
               <div className="pt-4 border-t border-stone-800 space-y-3">
                 <span className="text-xs font-medieval uppercase text-stone-300 font-bold block">
                   Désigner l'action de l'entité :
                 </span>
 
-                {/* 1. CUPIDON */}
+                {/* CUPIDON */}
                 {activeNightStep.id === 'cupid' && (
                   <div className="space-y-2">
                     <span className="text-xs text-pink-400 font-bold block font-medieval">
@@ -887,7 +946,7 @@ export default function GameMasterPage() {
                   </div>
                 )}
 
-                {/* 2. SALVATEUR */}
+                {/* SALVATEUR */}
                 {activeNightStep.id === 'guard' && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {livingPlayers.map((p) => {
@@ -917,7 +976,7 @@ export default function GameMasterPage() {
                   </div>
                 )}
 
-                {/* 3. VOYANTE */}
+                {/* VOYANTE */}
                 {activeNightStep.id === 'seer' && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {livingPlayers.map((p) => {
@@ -948,7 +1007,7 @@ export default function GameMasterPage() {
                   </div>
                 )}
 
-                {/* 4. LOUPS */}
+                {/* LOUPS */}
                 {activeNightStep.id === 'werewolf' && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {livingPlayers.map((p) => {
@@ -974,7 +1033,7 @@ export default function GameMasterPage() {
                   </div>
                 )}
 
-                {/* 5. SORCIÈRE */}
+                {/* SORCIÈRE */}
                 {activeNightStep.id === 'witch' && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 text-xs font-medieval">
@@ -1077,12 +1136,9 @@ export default function GameMasterPage() {
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* 4. VUE TRIBUNAL DU BÛCHER & SABLIER (PHASE DE JOUR) */}
-          {/* ========================================================================= */}
+          {/* VUE TRIBUNAL DU BÛCHER & SABLIER */}
           {activeCycleTab === 'DAY' && (
             <div className="space-y-6">
-              {/* PANNEAU SABLIER / TRIBUNAL DE JOUR */}
               <div className="p-6 sm:p-7 bg-gradient-to-b from-[#1c0a11] via-[#0d0509] to-[#050204] border-2 border-amber-600/50 rounded-3xl space-y-6 shadow-2xl candle-glow">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-800 pb-5">
                   <div>
@@ -1102,9 +1158,8 @@ export default function GameMasterPage() {
                   </button>
                 </div>
 
-                {/* MODULE SABLIER HORRIFIQUE & FLAMMES DU TEMPS */}
+                {/* MODULE SABLIER */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-6 bg-black/60 border border-stone-800/80 rounded-2xl relative overflow-hidden">
-                  {/* Cadran Circulaire du Temps */}
                   <div className="md:col-span-4 flex flex-col items-center justify-center relative">
                     <div className="relative w-36 h-36 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -1141,7 +1196,6 @@ export default function GameMasterPage() {
                     </div>
                   </div>
 
-                  {/* Contrôles du Sablier */}
                   <div className="md:col-span-8 space-y-3.5 text-center md:text-left">
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                       <button
@@ -1170,7 +1224,6 @@ export default function GameMasterPage() {
                       </button>
                     </div>
 
-                    {/* Raccourcis de durée */}
                     <div className="flex items-center justify-center md:justify-start gap-2 pt-1">
                       <span className="text-[11px] font-medieval text-stone-400">Durée :</span>
                       {[60, 120, 180, 300].map((s) => (
@@ -1195,7 +1248,7 @@ export default function GameMasterPage() {
                 </div>
               </div>
 
-              {/* Grille des Âmes Vivantes au Tribunal */}
+              {/* Grille des Âmes Vivantes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                 {livingPlayers.map((p) => {
                   const role = ROLES[p.role] || ROLES.villager;
