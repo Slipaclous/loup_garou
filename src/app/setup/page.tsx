@@ -30,7 +30,7 @@ export default function SetupPage() {
   }, [existingPlayers]);
 
   const handleAddPlayer = () => {
-    const name = newName.trim() || `Joueur ${playerNames.length + 1}`;
+    const name = newName.trim() || `Âme ${playerNames.length + 1}`;
     const nextList = [...playerNames, name];
     setPlayerNames(nextList);
     setNewName('');
@@ -39,7 +39,7 @@ export default function SetupPage() {
 
   const handleRemovePlayer = (index: number) => {
     if (playerNames.length <= 4) {
-      alert('Il faut au minimum 4 joueurs pour jouer aux Loups-Garous.');
+      alert('Il faut au minimum 4 âmes pour invoquer le rituel de Thiercelieux.');
       return;
     }
     const nextList = playerNames.filter((_, i) => i !== index);
@@ -64,30 +64,16 @@ export default function SetupPage() {
     setSelectedRoles(getRecommendedDeck(playerNames.length));
   };
 
-  const currentSelectedRoles = selectedRoles || getRecommendedDeck(playerNames.length);
-  const isBalanced = currentSelectedRoles.length === playerNames.length;
-  const wolfCount = currentSelectedRoles.filter(r => r === 'werewolf' || r === 'white_wolf').length;
-
   const handleLaunchGame = () => {
-    if (!isBalanced) {
-      alert(`Attention : ${playerNames.length} joueurs configurés mais ${currentSelectedRoles.length} cartes choisies. Ajustez les cartes pour avoir le même nombre.`);
-      return;
-    }
-    if (wolfCount === 0) {
-      alert('Il faut au moins un Loup-Garou dans la partie !');
-      return;
-    }
-
     useGameStore.setState({
-      selectedRoles: currentSelectedRoles,
       players: playerNames.map((name, i) => ({
-        id: `p-${i}-${Date.now()}`,
-        name: name.trim() || `Joueur ${i + 1}`,
-        role: 'villager',
+        id: `player-${Date.now()}-${i}`,
+        name,
+        role: (selectedRoles || [])[i] || 'villager',
         isAlive: true,
         isLover: false,
         isProtected: false,
-        elderLives: 1,
+        elderLives: (selectedRoles || [])[i] === 'elder' ? 2 : 1,
         isFoolRevealed: false,
         hasUsedLifePotion: false,
         hasUsedDeathPotion: false,
@@ -108,67 +94,71 @@ export default function SetupPage() {
 
   if (!mounted) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12 text-slate-400 font-mono text-sm">
-        Chargement de la configuration...
+      <div className="flex-1 flex items-center justify-center p-12 text-stone-500 font-mono text-xs">
+        Invocation de l'Assemblée...
       </div>
     );
   }
 
+  const currentSelectedRoles = selectedRoles || [];
+  const isBalanced = currentSelectedRoles.length === playerNames.length;
+  const wolfCount = currentSelectedRoles.filter(r => r === 'werewolf' || r === 'white_wolf').length;
+
   return (
-    <div className="flex-1 flex flex-col px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto w-full space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 border-b border-slate-800 pb-6">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 relative z-10">
+      {/* Header Gothique */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 border-b border-red-900/40 pb-6">
         <div>
-          <span className="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">
-            Configuration de la Partie
+          <span className="text-xs font-mono text-amber-500 uppercase tracking-widest font-bold flex items-center gap-1.5">
+            <span>⚜</span> Assemblée du Village • Configuration
           </span>
-          <h1 className="text-3xl sm:text-4xl font-display text-white font-bold mt-1">
-            Les Habitants de Thiercelieux
+          <h1 className="text-3xl sm:text-5xl font-cinzel text-white font-bold mt-1 drop-shadow">
+            Les Âmes de Thiercelieux
           </h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleAutoBalance}
-            className="px-4 py-2 text-xs font-mono font-bold rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer"
+            className="px-4 py-2.5 text-xs font-medieval font-bold rounded-xl btn-inquisition-gold shadow-lg cursor-pointer"
           >
-            ✦ Équilibrage Recommandé ({playerNames.length} Joueurs)
+            ✦ Équilibrage Sacré ({playerNames.length} Âmes)
           </button>
 
           <button
             onClick={handleLaunchGame}
             disabled={!isBalanced || wolfCount === 0}
-            className={`px-5 py-2.5 text-xs font-bold font-mono rounded-xl transition-all shadow-lg cursor-pointer ${
+            className={`px-6 py-2.5 text-xs font-bold font-medieval uppercase tracking-wider rounded-xl transition-all shadow-xl cursor-pointer ${
               isBalanced && wolfCount > 0
-                ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-600/30 hover:scale-105'
-                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                ? 'btn-inquisition-primary'
+                : 'bg-stone-900 text-stone-600 border border-stone-800 cursor-not-allowed'
             }`}
           >
-            Distribuer les Rôles →
+            Sceller les Destins →
           </button>
         </div>
       </div>
 
       {/* OPTIONS DE JEU / RÈGLES PERSONNALISÉES */}
-      <div className="bg-[#10141f] border border-purple-500/40 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <span className="text-xs font-mono text-purple-400 font-bold uppercase tracking-wider">
-            ⚙️ Paramètres des Pouvoirs (Fréquence d'action)
+      <div className="altar-panel p-6 sm:p-7 space-y-5 relative overflow-hidden">
+        <div className="flex items-center justify-between border-b border-amber-900/40 pb-3">
+          <span className="text-xs font-medieval text-amber-400 font-bold uppercase tracking-wider flex items-center gap-2">
+            <span>⚙️</span> Décrets de l'Inquisition (Fréquence des Pouvoirs)
           </span>
-          <span className="text-[11px] font-mono text-slate-400">Variantes personnalisées</span>
+          <span className="text-[11px] font-mono text-stone-400">Variantes Sacrées</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Option Voyante */}
-          <div className="p-3.5 bg-black/40 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+          <div className="p-4 inquisition-box flex items-center justify-between gap-3 border border-purple-800/40">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white">🔮 Voyante</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-500/30">
+                <span className="text-sm font-medieval font-bold text-white">🔮 Voyante</span>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-950/90 text-purple-300 border border-purple-500/40 font-bold">
                   {settings.seerSingleUse ? 'Action Unique (1x)' : 'Toutes les Nuits (Standard)'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-stone-400 mt-1 font-serif italic">
                 {settings.seerSingleUse 
                   ? 'La voyante ne peut sonder une carte qu\'une seule fois dans la partie.' 
                   : 'La voyante sonde une carte secrète chaque nuit.'}
@@ -177,10 +167,10 @@ export default function SetupPage() {
 
             <button
               onClick={() => updateSettings({ seerSingleUse: !settings.seerSingleUse })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-medieval font-bold transition-all cursor-pointer ${
                 settings.seerSingleUse 
-                  ? 'bg-purple-600 text-white shadow-md' 
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-purple-700 text-white shadow-lg shadow-purple-900/50' 
+                  : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
               }`}
             >
               {settings.seerSingleUse ? '1 Seule Fois ✓' : 'Chaque Nuit'}
@@ -188,15 +178,15 @@ export default function SetupPage() {
           </div>
 
           {/* Option Salvateur */}
-          <div className="p-3.5 bg-black/40 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+          <div className="p-4 inquisition-box flex items-center justify-between gap-3 border border-blue-800/40">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white">🛡️ Salvateur</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30">
+                <span className="text-sm font-medieval font-bold text-white">🛡️ Salvateur</span>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-blue-950/90 text-blue-300 border border-blue-500/40 font-bold">
                   {settings.guardSingleUse ? 'Action Unique (1x)' : 'Toutes les Nuits (Standard)'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-stone-400 mt-1 font-serif italic">
                 {settings.guardSingleUse 
                   ? 'Le salvateur ne peut protéger une personne qu\'une seule fois dans la partie.' 
                   : 'Le salvateur protège un joueur chaque nuit (jamais le même 2 nuits d\'affilée).'}
@@ -205,10 +195,10 @@ export default function SetupPage() {
 
             <button
               onClick={() => updateSettings({ guardSingleUse: !settings.guardSingleUse })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-medieval font-bold transition-all cursor-pointer ${
                 settings.guardSingleUse 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-blue-700 text-white shadow-lg shadow-blue-900/50' 
+                  : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
               }`}
             >
               {settings.guardSingleUse ? '1 Seule Fois ✓' : 'Chaque Nuit'}
@@ -220,11 +210,11 @@ export default function SetupPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Colonne Joueurs (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h2 className="text-sm font-mono text-slate-300 uppercase font-bold">
-              Joueurs ({playerNames.length})
+          <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+            <h2 className="text-sm font-medieval text-amber-300 uppercase font-bold tracking-wider">
+              Âmes Invoquées ({playerNames.length})
             </h2>
-            <span className="text-xs text-slate-400 font-mono">Min. 4</span>
+            <span className="text-xs text-stone-400 font-mono">Min. 4</span>
           </div>
 
           <form 
@@ -235,14 +225,14 @@ export default function SetupPage() {
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Prénom d'un ami..."
-              className="flex-1 bg-[#10141f] border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500"
+              placeholder="Nom du joueur..."
+              className="flex-1 bg-black/70 border border-stone-700/80 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-amber-500 font-medieval shadow-inner"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-mono font-bold text-white transition-colors cursor-pointer"
+              className="px-5 py-2.5 btn-inquisition-gold rounded-xl text-xs font-medieval font-bold text-white transition-all cursor-pointer"
             >
-              + Ajouter
+              + Invoquer
             </button>
           </form>
 
@@ -250,7 +240,7 @@ export default function SetupPage() {
             {playerNames.map((name, idx) => (
               <div 
                 key={idx}
-                className="flex items-center justify-between p-3 bg-[#10141f] border border-slate-800 rounded-xl hover:border-slate-700 transition-all shadow"
+                className="flex items-center justify-between p-3.5 inquisition-box hover:border-amber-700/60 transition-all shadow"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-mono text-amber-400 font-bold">
@@ -264,16 +254,16 @@ export default function SetupPage() {
                       updated[idx] = e.target.value;
                       setPlayerNames(updated);
                     }}
-                    className="bg-transparent text-sm font-medium text-white focus:outline-none focus:border-b border-red-500"
+                    className="bg-transparent text-sm font-medieval font-bold text-white focus:outline-none focus:border-b border-amber-500"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handleRemovePlayer(idx)}
-                  className="text-xs text-slate-500 hover:text-red-400 font-mono px-2 transition-colors cursor-pointer"
+                  className="text-xs text-stone-500 hover:text-red-400 font-mono px-2 transition-colors cursor-pointer"
                 >
-                  Supprimer
+                  Bannir ✕
                 </button>
               </div>
             ))}
@@ -282,12 +272,12 @@ export default function SetupPage() {
 
         {/* Colonne Rôles avec Artworks (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h2 className="text-sm font-mono text-slate-300 uppercase font-bold">
-              Cartes ({currentSelectedRoles.length} / {playerNames.length})
+          <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+            <h2 className="text-sm font-medieval text-amber-300 uppercase font-bold tracking-wider">
+              Cartes du Tarot ({currentSelectedRoles.length} / {playerNames.length})
             </h2>
-            <span className="text-xs font-mono">
-              Loups : <strong className="text-red-400">{wolfCount}</strong> | Village : <strong className="text-amber-400">{currentSelectedRoles.length - wolfCount}</strong>
+            <span className="text-xs font-medieval">
+              Loups : <strong className="text-red-400 font-bold">{wolfCount}</strong> | Village : <strong className="text-amber-400 font-bold">{currentSelectedRoles.length - wolfCount}</strong>
             </span>
           </div>
 
@@ -299,36 +289,36 @@ export default function SetupPage() {
               return (
                 <div
                   key={role.id}
-                  className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                  className={`p-3.5 rounded-2xl border flex flex-col justify-between transition-all ${
                     isSelected 
-                      ? 'bg-[#141926] border-slate-600 shadow-md' 
-                      : 'bg-[#10141f] border-slate-800 opacity-60 hover:opacity-100'
+                      ? 'bg-gradient-to-r from-[#1c0e18] to-[#10060e] border-amber-500 shadow-lg' 
+                      : 'inquisition-box opacity-60 hover:opacity-100'
                   }`}
                   style={{ borderLeftWidth: isSelected ? '4px' : '1px', borderLeftColor: isSelected ? role.color : undefined }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 shrink-0 bg-black/50 rounded-lg border border-white/10 flex items-center justify-center p-1">
+                    <div className="w-12 h-14 shrink-0 bg-black rounded-lg overflow-hidden border border-white/10 shadow">
                       <RoleArtwork roleId={role.id} className="w-full h-full" />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-white truncate">{role.name}</h4>
+                        <h4 className="text-xs font-medieval font-bold text-white truncate">{role.name}</h4>
                         {count > 0 && (
                           <span 
-                            className="text-xs font-mono font-bold text-white px-2 py-0.5 rounded"
+                            className="text-xs font-mono font-bold text-white px-2 py-0.5 rounded shadow"
                             style={{ backgroundColor: role.color }}
                           >
                             x{count}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">{role.shortDesc}</p>
+                      <p className="text-[11px] text-stone-400 line-clamp-2 mt-0.5 font-serif italic">{role.shortDesc}</p>
                     </div>
                   </div>
 
                   {/* Contrôles d'ajout / retrait */}
-                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-stone-800/80">
                     <span 
                       className="text-[10px] font-mono uppercase font-bold"
                       style={{ color: role.color }}
@@ -341,14 +331,14 @@ export default function SetupPage() {
                         type="button"
                         disabled={count === 0}
                         onClick={() => handleRemoveRoleInstance(role.id)}
-                        className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer"
+                        className="w-7 h-7 rounded-lg bg-stone-900 hover:bg-stone-800 disabled:opacity-30 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer border border-stone-700"
                       >
                         -
                       </button>
                       <button
                         type="button"
                         onClick={() => handleAddRoleInstance(role.id)}
-                        className="w-7 h-7 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer"
+                        className="w-7 h-7 rounded-lg bg-red-900 hover:bg-red-800 border border-red-600 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer shadow"
                       >
                         +
                       </button>

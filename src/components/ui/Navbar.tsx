@@ -10,26 +10,31 @@ export const Navbar: React.FC = () => {
   const { soundEnabled, toggleSound, resetGame, phase } = useGameStore();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#070509]/90 backdrop-blur border-b border-red-900/30 px-6 py-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+    <header className="sticky top-0 z-50 w-full bg-[#050205]/95 backdrop-blur-md border-b border-amber-900/40 px-6 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.95)]">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         {/* Brand Gothique */}
         <Link href="/" className="flex items-center gap-3 group">
-          <span className="font-cinzel text-xl tracking-wider text-amber-100 font-bold group-hover:text-red-400 transition-colors drop-shadow">
-            Thiercelieux
-          </span>
-          <span className="text-[11px] font-medieval text-stone-400 border-l border-red-900/40 pl-3 hidden sm:inline tracking-wider">
-            Édition Horreur 🌙
-          </span>
+          <div className="w-8 h-8 rounded-lg bg-red-950 border border-red-700/60 flex items-center justify-center text-sm shadow-md group-hover:scale-110 transition-transform">
+            🐺
+          </div>
+          <div className="flex flex-col">
+            <span className="font-cinzel text-lg sm:text-xl tracking-wider text-amber-100 font-bold group-hover:text-red-400 transition-colors drop-shadow">
+              Thiercelieux
+            </span>
+            <span className="text-[9px] font-mono text-stone-500 uppercase tracking-widest -mt-1 hidden sm:block">
+              Inquisition & Sceau du Sang
+            </span>
+          </div>
         </Link>
 
         {/* Links */}
-        <div className="flex items-center gap-1.5 sm:gap-3 text-xs font-medieval font-bold">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs font-medieval font-bold">
           <Link
             href="/grimoire"
-            className={`px-3.5 py-1.5 rounded-xl transition-all duration-200 ${
+            className={`px-3.5 py-1.5 rounded-xl border transition-all duration-200 ${
               pathname === '/grimoire'
-                ? 'bg-red-950/80 text-amber-200 border border-red-800/60 shadow-[0_0_15px_rgba(185,28,28,0.3)]'
-                : 'text-stone-400 hover:text-amber-100 hover:bg-white/5'
+                ? 'bg-amber-950/80 text-amber-200 border-amber-600/70 shadow-[0_0_15px_rgba(217,119,6,0.3)]'
+                : 'bg-black/40 border-stone-800/80 text-stone-400 hover:text-amber-100 hover:border-stone-600'
             }`}
           >
             📜 Grimoire
@@ -37,24 +42,24 @@ export const Navbar: React.FC = () => {
 
           <Link
             href="/gm"
-            className={`px-3.5 py-1.5 rounded-xl transition-all duration-200 ${
+            className={`px-3.5 py-1.5 rounded-xl border transition-all duration-200 ${
               pathname === '/gm'
-                ? 'bg-purple-950/80 text-purple-200 border border-purple-800/60 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                : 'text-stone-400 hover:text-purple-200 hover:bg-white/5'
+                ? 'bg-red-950/90 text-red-200 border-red-600/70 shadow-[0_0_20px_rgba(225,29,72,0.4)]'
+                : 'bg-black/40 border-stone-800/80 text-stone-400 hover:text-red-300 hover:border-stone-600'
             }`}
           >
-            🎭 Conteur (MJ)
+            🎭 Autel du MJ
           </Link>
 
           {phase !== 'SETUP' && (
             <button
               onClick={() => {
-                if (confirm('Réinitialiser la partie et revenir au village ?')) {
+                if (confirm('Abandonner la traque et réinitialiser le village ?')) {
                   resetGame();
                   window.location.href = '/setup';
                 }
               }}
-              className="px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-800/40 rounded-lg transition-colors font-mono cursor-pointer"
+              className="px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-950/60 border border-red-900/40 rounded-lg transition-colors font-mono cursor-pointer"
             >
               Reset
             </button>
@@ -62,9 +67,9 @@ export const Navbar: React.FC = () => {
 
           <button
             onClick={toggleSound}
-            className="px-2.5 py-1 text-[11px] font-mono text-stone-400 hover:text-amber-200 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-black/50 border border-stone-800 text-[11px] font-mono text-stone-400 hover:text-amber-200 hover:border-amber-600/40 transition-colors cursor-pointer"
           >
-            Son : {soundEnabled ? 'ON 🔊' : 'OFF 🔇'}
+            {soundEnabled ? '🔊 Son Actif' : '🔇 Muet'}
           </button>
         </div>
       </div>
