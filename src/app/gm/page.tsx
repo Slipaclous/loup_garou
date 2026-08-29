@@ -787,16 +787,22 @@ export default function GameMasterPage() {
   return (
     <div className="flex-1 flex flex-col px-4 sm:px-8 py-8 max-w-6xl mx-auto w-full space-y-6 relative z-10">
       {/* ========================================================================= */}
-      {/* 1. AUTEL DU CONTEUR */}
+      {/* 1. AUTEL DU CONTEUR AVEC BANNIÈRE GOTHIQUE EN RELIEF */}
       {/* ========================================================================= */}
-      <div className="altar-panel p-6 sm:p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="altar-panel p-6 sm:p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        {/* Ornement de fond gothique sculpté en filigrane */}
+        <div 
+          className="absolute inset-0 opacity-15 mix-blend-screen bg-right bg-no-repeat bg-contain pointer-events-none"
+          style={{ backgroundImage: "url('/images/textures/banner_inquisition.jpg')" }}
+        />
+
         <div className="space-y-2 z-10">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-rose-600" />
-            <span className="text-xs font-medieval text-amber-300 uppercase font-bold tracking-widest">
-              ⚜ Autel de l'Inquisition • {activeCycleTab === 'NIGHT' ? 'Nuit Obscure' : "Jour d'Exécution"}
+          <div className="flex items-center gap-3">
+            <img src="/images/textures/wax_seal.png" alt="Sceau" className="w-6 h-6 object-contain" />
+            <span className="text-xs font-medieval text-stone-400 uppercase font-bold tracking-widest">
+              Autel de l'Inquisition • {activeCycleTab === 'NIGHT' ? 'Nuit Obscure' : "Jour d'Exécution"}
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-black border border-stone-800 text-stone-400">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black border border-stone-800 text-stone-400">
               Cycle #{dayNumber || 1}
             </span>
           </div>
@@ -815,7 +821,7 @@ export default function GameMasterPage() {
               setIsCardFlipped(false);
               sounds.stopNightLoop();
             }}
-            className="px-3.5 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-700 text-stone-200 text-xs font-medieval font-bold transition-all cursor-pointer"
+            className="px-3.5 py-2 rounded-lg bg-black hover:bg-stone-900 border border-stone-700 text-stone-200 text-xs font-medieval font-bold transition-all cursor-pointer shadow"
           >
             🃏 Sceaux Secrets
           </button>
@@ -870,7 +876,7 @@ export default function GameMasterPage() {
       ) : (
         <div className="space-y-6">
           {/* SÉLECTEUR DE PHASE */}
-          <div className="flex items-center justify-between p-2 rounded-xl bg-[#0a050c] border border-stone-800/80 font-medieval text-xs">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-[#08040a] border border-stone-800 font-medieval text-xs">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -879,8 +885,8 @@ export default function GameMasterPage() {
                 }}
                 className={`px-4 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
                   activeCycleTab === 'NIGHT'
-                    ? 'bg-purple-950/80 text-purple-200 border border-purple-800'
-                    : 'text-stone-400 hover:text-white'
+                    ? 'bg-stone-800 text-stone-100 border border-stone-600'
+                    : 'text-stone-500 hover:text-stone-300'
                 }`}
               >
                 <span>🌙 Phase de Nuit (Rituel Actif)</span>
@@ -889,8 +895,8 @@ export default function GameMasterPage() {
                 onClick={handleWakeUpVillage}
                 className={`px-4 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
                   activeCycleTab === 'DAY'
-                    ? 'bg-amber-950/80 text-amber-200 border border-amber-800'
-                    : 'text-stone-400 hover:text-white'
+                    ? 'bg-stone-800 text-stone-100 border border-stone-600'
+                    : 'text-stone-500 hover:text-stone-300'
                 }`}
               >
                 <span>☀️ Tribunal de Jour & Bûcher</span>
@@ -931,7 +937,7 @@ export default function GameMasterPage() {
               </div>
 
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                <div className="w-36 h-48 shrink-0 bg-black rounded-xl overflow-hidden border border-white/10 shadow-xl">
+                <div className="w-40 h-56 shrink-0 bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl">
                   <RoleArtwork roleId={activeNightStep.roleDef.id} className="w-full h-full" />
                 </div>
 
