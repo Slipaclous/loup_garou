@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import usePartySocket from "partysocket/react";
 import { QRCodeSVG } from 'qrcode.react';
 import { RoleCard } from '@/components/game/RoleCard';
 import { RoleArtwork } from '@/components/game/RoleArtwork';
 import { RoomState, RoomPlayer } from '@/lib/multiplayerTypes';
 import { ROLES, RoleId } from '@/lib/roles';
 import { sounds } from '@/lib/sound';
-
-const PARTYKIT_HOST = process.env.NEXT_PUBLIC_PARTYKIT_HOST || "127.0.0.1:1999";
 
 export default function RoomPage() {
   const params = useParams();
@@ -24,6 +21,46 @@ export default function RoomPage() {
   const [isHost, setIsHost] = useState(false);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [isRoleFlipped, setIsRoleFlipped] = useState(false);
+
+  // Envoi d'une action à l'API de synchronisation
+  const sendAction = useCallback(async (action: any) => {
+    try {
+      const res = await fetch(`/api/room/${roomCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRoomState(data.state);
+      }
+    } catch (e) {
+      console.error("Erreur sync room :", e);
+    }
+  }, [roomCode]);
+
+  // Polling automatique toutes les 1.2 secondes pour synchroniser tous les écrans
+  useEffect(() => {
+    let active = true;
+    const fetchState = async () => {
+      try {
+        const res = await fetch(`/api/room/${roomCode}`);
+        if (res.ok && active) {
+          const data = await res.json();
+          setRoomState(data.state);
+        }
+      } catch (e) {
+        console.error("Erreur fetch room :", e);
+      }
+    };
+
+    fetchState();
+    const interval = setInterval(fetchState, 1200);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [roomCode]);
 
   useEffect(() => {
     setMounted(true);
@@ -43,34 +80,15 @@ export default function RoomPage() {
 
     setPlayerId(pid);
     setPlayerName(pname);
-  }, [roomCode]);
 
-  // Connexion WebSocket via PartySocket
-  const socket = usePartySocket({
-    host: PARTYKIT_HOST,
-    room: roomCode,
-    onMessage(event) {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'SYNC_STATE') {
-          setRoomState(message.state);
-        }
-      } catch (err) {
-        console.error("Erreur message WebSocket :", err);
-      }
-    },
-    onOpen() {
-      // S'enregistrer auprès du serveur
-      if (playerId) {
-        socket.send(JSON.stringify({
-          type: 'JOIN_ROOM',
-          playerId,
-          name: playerName,
-          isHost
-        }));
-      }
-    }
-  });
+    // Rejoindre automatiquement la salle
+    sendAction({
+      type: 'JOIN_ROOM',
+      playerId: pid,
+      name: pname,
+      isHost: hostFlag
+    });
+  }, [roomCode, sendAction]);
 
   if (!mounted || !roomState) {
     return (
@@ -136,7 +154,7 @@ export default function RoomPage() {
             <button
               disabled={roomState.players.length < 4}
               onClick={() => {
-                socket.send(JSON.stringify({ type: 'START_GAME' }));
+                sendAction({ type: 'START_GAME' });
                 sounds.playBell();
               }}
               className={`w-full py-4 rounded-xl font-medieval font-bold text-xs uppercase tracking-wider transition-all shadow-xl ${
@@ -191,7 +209,7 @@ export default function RoomPage() {
           {isHost && (
             <button
               onClick={() => {
-                socket.send(JSON.stringify({ type: 'SET_PHASE', phase: 'NIGHT', activeNightStepId: 'guard' }));
+                sendAction({ type: 'SET_PHASE', phase: 'NIGHT', activeNightStepId: 'guard' });
                 sounds.startNightLoop();
               }}
               className="w-full py-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer"
@@ -205,7 +223,7 @@ export default function RoomPage() {
   }
 
   // =========================================================================
-  // 3. PHASE DE NUIT : ÉCRAN SOMBRE / ACTION SECRÈTE SANS VIBRATION BRUYANTE
+  // 3. PHASE DE NUIT : ÉCRAN SOMBRE / ACTION SECRÈTE SANS VIBRATION
   // =========================================================================
   if (roomState.phase === 'NIGHT') {
     const isMyTurn = currentPlayer?.role === roomState.activeNightStepId;
@@ -237,11 +255,11 @@ export default function RoomPage() {
                   <button
                     key={p.id}
                     onClick={() => {
-                      socket.send(JSON.stringify({
+                      sendAction({
                         type: 'SUBMIT_NIGHT_ACTION',
                         stepId: roomState.activeNightStepId,
                         targetId: p.id
-                      }));
+                      });
                       if (roomState.activeNightStepId === 'guard') sounds.playShield();
                       if (roomState.activeNightStepId === 'werewolf') sounds.playBite();
                       if (roomState.activeNightStepId === 'seer') sounds.playWhisper();
@@ -259,7 +277,7 @@ export default function RoomPage() {
             <div className="pt-4 border-t border-stone-800 space-y-2">
               <button
                 onClick={() => {
-                  socket.send(JSON.stringify({ type: 'SET_PHASE', phase: 'DAY' }));
+                  sendAction({ type: 'SET_PHASE', phase: 'DAY' });
                   sounds.playBell();
                 }}
                 className="w-full py-3 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer"
@@ -301,11 +319,11 @@ export default function RoomPage() {
                 <button
                   key={p.id}
                   onClick={() => {
-                    socket.send(JSON.stringify({
+                    sendAction({
                       type: 'SUBMIT_DAY_VOTE',
                       voterId: playerId,
                       targetId: p.id
-                    }));
+                    });
                     sounds.playClick();
                   }}
                   className={`p-3 rounded-xl border text-xs font-medieval font-bold transition-all cursor-pointer truncate ${
@@ -330,7 +348,7 @@ export default function RoomPage() {
             <div className="pt-4 border-t border-stone-800 space-y-2">
               <button
                 onClick={() => {
-                  socket.send(JSON.stringify({ type: 'SET_PHASE', phase: 'NIGHT', activeNightStepId: 'werewolf' }));
+                  sendAction({ type: 'SET_PHASE', phase: 'NIGHT', activeNightStepId: 'werewolf' });
                   sounds.startNightLoop();
                 }}
                 className="w-full py-3 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-white font-medieval font-bold text-xs uppercase tracking-wider cursor-pointer"
