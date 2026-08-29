@@ -9,6 +9,20 @@ import { RoleArtwork } from '@/components/game/RoleArtwork';
 export default function HomePage() {
   const { setGameMode } = useGameStore();
 
+  const handleCreateMultiplayerRoom = () => {
+    // Générer un code à 4 lettres
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    // Marquer l'hôte
+    localStorage.setItem(`lg_host_${code}`, 'true');
+    localStorage.setItem('lg_player_id', `host-${Date.now()}`);
+    localStorage.setItem('lg_player_name', 'Le Conteur (Hôte)');
+    window.location.href = `/room/${code}`;
+  };
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-8 sm:py-16 max-w-6xl mx-auto w-full relative z-10">
       {/* Grande Bannière de Bas-Relief Médiéval avec Gargouilles */}
@@ -41,71 +55,104 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* 2 Stèles d'Inquisition */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl text-left">
+        {/* 3 Rituels de Jeu (Passe & Joue, Maître du Jeu, Multijoueur Hybride) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-left">
           {/* Mode 1: Passe & Joue */}
           <Link
             href="/setup"
             onClick={() => setGameMode('PASS_AND_PLAY')}
-            className="altar-panel-blood p-8 rounded-2xl flex flex-col justify-between group space-y-6 transition-all duration-300 hover:scale-[1.01] relative overflow-hidden"
+            className="altar-panel-blood p-7 rounded-2xl flex flex-col justify-between group space-y-6 transition-all duration-300 hover:scale-[1.01] relative overflow-hidden"
           >
-            <div className="space-y-4 z-10">
+            <div className="space-y-3 z-10">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-rose-400 uppercase font-bold tracking-widest flex items-center gap-2">
+                <span className="text-xs font-mono text-rose-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
                   <img src="/images/textures/wax_seal.png" alt="Sceau" className="w-4 h-4 object-contain" />
                   Rituel 01
                 </span>
-                <span className="text-[10px] text-stone-300 font-mono bg-black px-3 py-1 rounded-full border border-stone-800">
-                  📱 1 Seul Écran
+                <span className="text-[10px] text-stone-300 font-mono bg-black px-2.5 py-0.5 rounded-full border border-stone-800">
+                  📱 1 Écran
                 </span>
               </div>
 
-              <h3 className="text-2xl sm:text-4xl font-cinzel text-stone-100 font-bold group-hover:text-rose-400 transition-colors">
+              <h3 className="text-xl sm:text-2xl font-cinzel text-stone-100 font-bold group-hover:text-rose-400 transition-colors">
                 Passe & Joue →
               </h3>
 
-              <p className="text-xs sm:text-sm text-stone-400 leading-relaxed font-sans">
-                Chaque joueur sonde son rôle avec les cartes de Tarot Occulte, puis passe l’appareil pour vivre la nuit guidée et faire face au tribunal du bûcher.
+              <p className="text-xs text-stone-400 leading-relaxed font-sans">
+                Chaque joueur sonde sa carte de Tarot 3D, puis passe l’appareil pour vivre la nuit guidée et faire face au tribunal du bûcher.
               </p>
             </div>
 
             <div className="pt-4 border-t border-stone-900 flex items-center justify-between text-xs font-medieval text-rose-400 font-bold z-10">
-              <span>👥 4 à 18 Âmes</span>
-              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider text-stone-300">Entrer dans l'Arène →</span>
+              <span>👥 4-18 Âmes</span>
+              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider text-stone-300">Entrer →</span>
             </div>
           </Link>
 
-          {/* Mode 2: Maître du Jeu */}
+          {/* Mode 2: Maître du Jeu Régie MJ */}
           <Link
             href="/gm"
             onClick={() => setGameMode('GM_ASSISTANT')}
-            className="altar-panel p-8 rounded-2xl flex flex-col justify-between group space-y-6 transition-all duration-300 hover:scale-[1.01] relative overflow-hidden"
+            className="altar-panel p-7 rounded-2xl flex flex-col justify-between group space-y-6 transition-all duration-300 hover:scale-[1.01] relative overflow-hidden"
           >
-            <div className="space-y-4 z-10">
+            <div className="space-y-3 z-10">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-stone-400 uppercase font-bold tracking-widest flex items-center gap-2">
+                <span className="text-xs font-mono text-stone-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
                   <img src="/images/textures/wax_seal.png" alt="Sceau" className="w-4 h-4 object-contain" />
                   Rituel 02
                 </span>
-                <span className="text-[10px] text-stone-300 font-mono bg-black px-3 py-1 rounded-full border border-stone-800">
-                  🎭 Autel du Conteur (MJ)
+                <span className="text-[10px] text-stone-300 font-mono bg-black px-2.5 py-0.5 rounded-full border border-stone-800">
+                  🎭 Autel MJ
                 </span>
               </div>
 
-              <h3 className="text-2xl sm:text-4xl font-cinzel text-stone-100 font-bold group-hover:text-amber-400 transition-colors">
+              <h3 className="text-xl sm:text-2xl font-cinzel text-stone-100 font-bold group-hover:text-amber-400 transition-colors">
                 Maître du Jeu (MJ) →
               </h3>
 
-              <p className="text-xs sm:text-sm text-stone-400 leading-relaxed font-sans">
-                L'Autel suprême de l'Inquisiteur : sablier de tribunal animé avec battements de cœur, incantations audio, régie d'ambiance et révélations de cartes de tarot 3D.
+              <p className="text-xs text-stone-400 leading-relaxed font-sans">
+                La régie intégrale pour le conteur : sablier du tribunal avec cœur battant, bruitages d'ambiance et révélations 3D.
               </p>
             </div>
 
             <div className="pt-4 border-t border-stone-900 flex items-center justify-between text-xs font-medieval text-stone-400 font-bold z-10">
-              <span>📜 Console Régie MJ</span>
-              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider text-stone-300">Ouvrir l'Autel →</span>
+              <span>📜 Régie MJ</span>
+              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider text-stone-300">Ouvrir →</span>
             </div>
           </Link>
+
+          {/* Mode 3: Multijoueur Hybride (Room Code PIN) */}
+          <div
+            onClick={handleCreateMultiplayerRoom}
+            className="altar-panel p-7 rounded-2xl flex flex-col justify-between group space-y-6 transition-all duration-300 hover:scale-[1.01] relative overflow-hidden cursor-pointer border-stone-700 hover:border-stone-500"
+          >
+            <div className="space-y-3 z-10">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono text-stone-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
+                  <img src="/images/textures/wax_seal.png" alt="Sceau" className="w-4 h-4 object-contain" />
+                  Rituel 03
+                </span>
+                <span className="text-[10px] text-stone-300 font-mono bg-black px-2.5 py-0.5 rounded-full border border-stone-800">
+                  📡 Smart Multi
+                </span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-cinzel text-stone-100 font-bold group-hover:text-stone-300 transition-colors">
+                Salle Hybride (Room) →
+              </h3>
+
+              <p className="text-xs text-stone-400 leading-relaxed font-sans">
+                Chaque invité rejoint la salle avec son smartphone (QR Code / Code PIN), reçoit sa carte secrète et vote en toute discrétion.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-stone-900 flex items-center justify-between text-xs font-medieval text-stone-400 font-bold z-10">
+              <Link href="/join" onClick={(e) => e.stopPropagation()} className="underline text-stone-400 hover:text-white">
+                Rejoindre (/join)
+              </Link>
+              <span className="group-hover:translate-x-1 transition-transform uppercase tracking-wider text-stone-300">Créer une Salle →</span>
+            </div>
+          </div>
         </div>
 
         {/* Bestiaire des Cartes de Tarot */}
