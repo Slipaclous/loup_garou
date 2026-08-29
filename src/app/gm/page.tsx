@@ -690,7 +690,9 @@ export default function GameMasterPage() {
     }
   ].filter(s => Boolean(s.condition));
 
-  const activeNightStep = nightStepsSequence[currentStepIndex] || nightStepsSequence[0];
+  // S'assurer que l'index actuel ne dépasse pas la taille du tableau filtré
+  const safeStepIndex = Math.min(currentStepIndex, Math.max(0, nightStepsSequence.length - 1));
+  const activeNightStep = nightStepsSequence[safeStepIndex] || nightStepsSequence[0];
 
   const goToStep = (index: number) => {
     setCurrentStepIndex(index);
