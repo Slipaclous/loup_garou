@@ -7,6 +7,7 @@ import { RoleCard } from '@/components/game/RoleCard';
 import { useGameStore, Player } from '@/lib/store';
 import { ROLES, RoleId, DEFAULT_PLAYER_NAMES, getRecommendedDeck } from '@/lib/roles';
 import { sounds } from '@/lib/sound';
+import confetti from 'canvas-confetti';
 
 export default function GameMasterPage() {
   const {
@@ -17,7 +18,10 @@ export default function GameMasterPage() {
     setNightCupidLovers,
     resolveHunterShot,
     startGame,
+    resetGame,
     dayNumber,
+    winner,
+    phase
   } = useGameStore();
 
   const [mounted, setMounted] = useState(false);
@@ -59,9 +63,18 @@ export default function GameMasterPage() {
     setMounted(true);
   }, []);
 
+  // Déclenchement de la cloche et des confettis en cas de victoire (Fin de partie)
+  useEffect(() => {
+    if (phase === 'GAME_OVER' || winner) {
+      sounds.stopNightLoop();
+      sounds.playBell();
+      confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+    }
+  }, [phase, winner]);
+
   // Déclenchement automatique de la boucle audio nocturne
   useEffect(() => {
-    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer) {
+    if (activeCycleTab === 'NIGHT' && !isRevealingRoles && !isMorningRevealActive && !isDayVoteRevealActive && !hunterShootingPlayer && phase !== 'GAME_OVER') {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
@@ -69,7 +82,7 @@ export default function GameMasterPage() {
     return () => {
       sounds.stopNightLoop();
     };
-  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer]);
+  }, [activeCycleTab, isRevealingRoles, isMorningRevealActive, isDayVoteRevealActive, hunterShootingPlayer, phase]);
 
   const handleQuickDemoGame = () => {
     useGameStore.setState({
@@ -120,6 +133,64 @@ export default function GameMasterPage() {
   const livingPlayers = (players || []).filter((p) => p.isAlive);
   const deadPlayers = (players || []).filter((p) => !p.isAlive);
   const witchPlayer = players.find((p) => p.role === 'witch');
+
+  // =========================================================================
+  // 0. ÉCRAN DE VICTOIRE / FIN DE PARTIE
+  // =========================================================================
+  if (phase === 'GAME_OVER' && winner) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-xl mx-auto w-full text-center space-y-6">
+        <div className="w-full bg-[#10141f] border-2 border-amber-500/50 rounded-3xl p-8 space-y-6 shadow-2xl shadow-amber-950/40">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-red-600 mx-auto flex items-center justify-center text-4xl shadow-xl">
+            🏆
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-amber-400 uppercase font-bold tracking-widest">
+              Partie Terminée — Thiercelieux a Parlé
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-display font-bold text-white">
+              {winner === 'WEREWOLVES' && 'Victoire des Loups-Garous !'}
+              {winner === 'VILLAGE' && 'Victoire du Village !'}
+              {winner === 'LOVERS' && 'Victoire des Amoureux !'}
+              {winner === 'WHITE_WOLF' && 'Victoire du Loup Blanc !'}
+            </h1>
+          </div>
+
+          <p className="text-sm text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">
+            {logs[logs.length - 1]?.message}
+          </p>
+
+          <div className="space-y-2 pt-2 border-t border-slate-800 text-left">
+            <span className="text-xs font-mono text-slate-400 uppercase font-bold block">Rôles de tous les Joueurs :</span>
+            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 font-mono text-xs">
+              {players.map((p) => {
+                const r = ROLES[p.role] || ROLES.villager;
+                return (
+                  <div key={p.id} className="flex justify-between items-center text-slate-200 p-2.5 rounded-xl bg-black/40 border border-white/5">
+                    <span className="font-bold">{p.name} {p.isLover ? '♥' : ''} {!p.isAlive ? '☠️' : '✨'}</span>
+                    <span className="font-bold" style={{ color: r.color }}>{r.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              onClick={() => {
+                resetGame();
+                window.location.href = '/setup';
+              }}
+              className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-xl transition-all cursor-pointer"
+            >
+              Nouvelle Partie &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // 1. DISTRIBUTION SECRÈTE DES RÔLES
@@ -257,7 +328,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 3. RÉVÉLATION CINÉMATIQUE DU MATIN (RETOURNEZ L'ÉCRAN)
+  // 3. RÉVÉLATION CINÉMATIQUE DU MATIN (SON DE CLOCHE UNIQUEMENT)
   // =========================================================================
   if (isMorningRevealActive) {
     return (
@@ -268,11 +339,11 @@ export default function GameMasterPage() {
               Lever du Jour sur Thiercelieux ☀️
             </span>
             <h2 className="text-2xl sm:text-4xl font-display text-white font-bold">
-              {morningDeaths.length > 0 ? 'Le Bilan Tragique de la Nuit' : 'Une Nuit Paisible...'}
+              {morningDeaths.length > 0 ? 'Le Bilan de la Nuit' : 'Une Nuit Paisible...'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300">
               {morningDeaths.length > 0
-                ? 'Tournez l\'écran vers le village et touchez la carte pour découvrir la victime et son rôle :'
+                ? 'Tournez l\'écran vers le village et touchez la carte pour découvrir la victime :'
                 : 'Les villageois se réveillent. Tout le monde a survécu à la nuit !'}
             </p>
           </div>
@@ -307,9 +378,6 @@ export default function GameMasterPage() {
                           ...morningDeathCardFlipped,
                           [d.player.id]: nextFlipped
                         });
-                        if (nextFlipped) {
-                          sounds.playDeath();
-                        }
                       }}
                       size="lg"
                     />
@@ -358,7 +426,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 4. RÉVÉLATION CINÉMATIQUE DU CONDAMNÉ DU BÛCHER (VOTE DE JOUR)
+  // 4. RÉVÉLATION DU CONDAMNÉ DU BÛCHER (VOTE DE JOUR)
   // =========================================================================
   if (isDayVoteRevealActive && executedPlayer) {
     const roleDef = ROLES[executedPlayer.role] || ROLES.villager;
@@ -388,9 +456,6 @@ export default function GameMasterPage() {
             onToggleReveal={() => {
               const next = !isDayCardFlipped;
               setIsDayCardFlipped(next);
-              if (next) {
-                sounds.playDeath();
-              }
             }}
             size="lg"
           />
