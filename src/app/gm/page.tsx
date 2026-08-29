@@ -43,6 +43,11 @@ export default function GameMasterPage() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [activeCycleTab, setActiveCycleTab] = useState<'NIGHT' | 'DAY'>('NIGHT');
   
+  // Sablier du Tribunal & Débats
+  const [timerDuration, setTimerDuration] = useState(120); // 120s par défaut
+  const [timerSeconds, setTimerSeconds] = useState(120);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+
   // Cibles
   const [targetWolf, setTargetWolf] = useState<string | null>(null);
   const [targetGuard, setTargetGuard] = useState<string | null>(null);
@@ -60,6 +65,27 @@ export default function GameMasterPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Gestion du Minuteur du Tribunal de Jour avec Battement de Coeur & Gong
+  useEffect(() => {
+    let interval: any;
+    if (isTimerRunning && timerSeconds > 0) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => {
+          const next = prev - 1;
+          // Battement de coeur oppressant dans les 15 dernières secondes
+          if (next <= 15 && next > 0) {
+            sounds.playHeartbeat();
+          }
+          return next;
+        });
+      }, 1000);
+    } else if (timerSeconds === 0 && isTimerRunning) {
+      setIsTimerRunning(false);
+      sounds.playGong();
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning, timerSeconds]);
 
   useEffect(() => {
     if (phase === 'GAME_OVER' || winner) {
@@ -110,6 +136,24 @@ export default function GameMasterPage() {
     setIsDayVoteRevealActive(true);
   };
 
+  const startTimer = (seconds: number) => {
+    setTimerDuration(seconds);
+    setTimerSeconds(seconds);
+    setIsTimerRunning(true);
+    sounds.playClick();
+  };
+
+  const toggleTimer = () => {
+    setIsTimerRunning(!isTimerRunning);
+    sounds.playClick();
+  };
+
+  const resetTimer = (seconds: number = timerDuration) => {
+    setIsTimerRunning(false);
+    setTimerSeconds(seconds);
+    sounds.playClick();
+  };
+
   if (!mounted) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-stone-500 font-mono text-xs">
@@ -121,6 +165,16 @@ export default function GameMasterPage() {
   const livingPlayers = (players || []).filter((p) => p.isAlive);
   const deadPlayers = (players || []).filter((p) => !p.isAlive);
   const witchPlayer = players.find((p) => p.role === 'witch');
+
+  // Formatage mm:ss
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // Pourcentage dégressif pour l'anneau de feu du sablier
+  const timerPercentage = (timerSeconds / timerDuration) * 100;
 
   // =========================================================================
   // ÉCRAN DE FIN DE PARTIE
@@ -598,6 +652,7 @@ export default function GameMasterPage() {
     setIsMorningRevealActive(false);
     setIsDayVoteRevealActive(false);
     setHunterShootingPlayer(null);
+    setIsTimerRunning(false);
   };
 
   return (
@@ -606,7 +661,6 @@ export default function GameMasterPage() {
       {/* 1. AUTEL SUPRÊME DU CONTEUR (HEADER IMMERSIF) */}
       {/* ========================================================================= */}
       <div className="bg-gradient-to-r from-[#1c0b13] via-[#0e060c] to-[#070306] border-2 border-amber-700/60 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_10px_40px_rgba(0,0,0,0.9)] candle-glow relative overflow-hidden">
-        {/* Lueur rougeoyante d'ambiance */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-800/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-2 z-10">
@@ -648,7 +702,13 @@ export default function GameMasterPage() {
             onClick={() => sounds.playBell()}
             className="px-3.5 py-2.5 rounded-xl bg-amber-950/90 border border-amber-700/60 hover:bg-amber-900 text-amber-200 text-xs font-bold transition-all cursor-pointer shadow hover:scale-105"
           >
-            🔔 Glas Funèbre
+            🔔 Cloche
+          </button>
+          <button
+            onClick={() => sounds.playGong()}
+            className="px-3.5 py-2.5 rounded-xl bg-purple-950/90 border border-purple-700/60 hover:bg-purple-900 text-purple-200 text-xs font-bold transition-all cursor-pointer shadow hover:scale-105"
+          >
+            🪘 Gong
           </button>
           <button
             onClick={() => sounds.playGunshot()}
@@ -1018,18 +1078,19 @@ export default function GameMasterPage() {
           )}
 
           {/* ========================================================================= */}
-          {/* 4. VUE TRIBUNAL DU BÛCHER (PHASE DE JOUR) */}
+          {/* 4. VUE TRIBUNAL DU BÛCHER & SABLIER (PHASE DE JOUR) */}
           {/* ========================================================================= */}
           {activeCycleTab === 'DAY' && (
             <div className="space-y-6">
-              <div className="p-6 bg-gradient-to-b from-[#180a11] via-[#0d0509] to-[#050204] border border-amber-600/50 rounded-3xl space-y-4 shadow-xl candle-glow">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-800 pb-4">
+              {/* PANNEAU SABLIER / TRIBUNAL DE JOUR */}
+              <div className="p-6 sm:p-7 bg-gradient-to-b from-[#1c0a11] via-[#0d0509] to-[#050204] border-2 border-amber-600/50 rounded-3xl space-y-6 shadow-2xl candle-glow">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-800 pb-5">
                   <div>
-                    <span className="text-xs font-medieval text-amber-400 uppercase font-bold tracking-widest">
-                      Place Publique de Thiercelieux
+                    <span className="text-xs font-medieval text-amber-400 uppercase font-bold tracking-widest flex items-center gap-2">
+                      <span>⚜</span> Délibérations & Tribunal Populaire
                     </span>
-                    <h2 className="text-2xl font-cinzel text-white font-bold mt-0.5">
-                      Tribunal & Sentence Populaire
+                    <h2 className="text-2xl sm:text-3xl font-cinzel text-white font-bold mt-1">
+                      Le Sablier du Jugement
                     </h2>
                   </div>
 
@@ -1041,12 +1102,100 @@ export default function GameMasterPage() {
                   </button>
                 </div>
 
-                <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans">
-                  Laissez l'assemblée délibérer. Lorsqu'un vote majoritaire est obtenu contre un suspect, cliquez sur <strong>Condamner</strong> pour présenter la stèle funéraire à la table.
-                </p>
+                {/* MODULE SABLIER HORRIFIQUE & FLAMMES DU TEMPS */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-6 bg-black/60 border border-stone-800/80 rounded-2xl relative overflow-hidden">
+                  {/* Cadran Circulaire du Temps */}
+                  <div className="md:col-span-4 flex flex-col items-center justify-center relative">
+                    <div className="relative w-36 h-36 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke="rgba(255,255,255,0.05)"
+                          strokeWidth="8"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke={timerSeconds <= 15 ? '#ef4444' : '#d97706'}
+                          strokeWidth="8"
+                          strokeDasharray="264"
+                          strokeDashoffset={264 - (264 * timerPercentage) / 100}
+                          strokeLinecap="round"
+                          fill="transparent"
+                          className="transition-all duration-1000 ease-linear"
+                        />
+                      </svg>
+
+                      <div className="absolute flex flex-col items-center">
+                        <span className={`text-3xl font-cinzel font-bold tracking-wider ${timerSeconds <= 15 ? 'text-red-500 animate-pulse' : 'text-amber-100'}`}>
+                          {formatTimer(timerSeconds)}
+                        </span>
+                        <span className="text-[9px] font-medieval uppercase text-stone-400 mt-0.5">
+                          {isTimerRunning ? 'Débat en cours' : timerSeconds === 0 ? 'Temps Écoulé !' : 'Pause'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contrôles du Sablier */}
+                  <div className="md:col-span-8 space-y-3.5 text-center md:text-left">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                      <button
+                        onClick={toggleTimer}
+                        className={`px-5 py-2.5 rounded-xl font-medieval font-bold text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer ${
+                          isTimerRunning
+                            ? 'bg-amber-700 hover:bg-amber-600 text-white'
+                            : 'bg-gradient-to-r from-red-800 to-amber-700 hover:opacity-95 text-white'
+                        }`}
+                      >
+                        {isTimerRunning ? '⏸ Mettre en Pause' : '▶ Lancer le Débat'}
+                      </button>
+
+                      <button
+                        onClick={() => resetTimer()}
+                        className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 font-medieval text-xs font-bold cursor-pointer"
+                      >
+                        🔄 Réinitialiser
+                      </button>
+
+                      <button
+                        onClick={() => sounds.playGong()}
+                        className="px-4 py-2.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-600/50 text-purple-200 font-medieval text-xs font-bold cursor-pointer"
+                      >
+                        🪘 Faire Résonner le Gong
+                      </button>
+                    </div>
+
+                    {/* Raccourcis de durée */}
+                    <div className="flex items-center justify-center md:justify-start gap-2 pt-1">
+                      <span className="text-[11px] font-medieval text-stone-400">Durée :</span>
+                      {[60, 120, 180, 300].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => startTimer(s)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                            timerDuration === s
+                              ? 'bg-amber-950 border border-amber-500 text-amber-300 font-bold'
+                              : 'bg-black/40 border border-stone-800 text-stone-400 hover:text-stone-200'
+                          }`}
+                        >
+                          {s / 60} min
+                        </button>
+                      ))}
+                    </div>
+
+                    <p className="text-xs text-stone-400 font-sans italic">
+                      💡 Un battement de cœur ❤️‍🔥 retentira automatiquement dans les 15 dernières secondes, suivi du gong final pour clore les délibérations.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Grille des Âmes Vivantes */}
+              {/* Grille des Âmes Vivantes au Tribunal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                 {livingPlayers.map((p) => {
                   const role = ROLES[p.role] || ROLES.villager;

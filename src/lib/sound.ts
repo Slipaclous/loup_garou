@@ -1,14 +1,20 @@
-// Gestionnaire de sons hybride : Joue les vrais MP3 du dossier /public/sounds/ avec support de boucle d'ambiance nocturne
+// Moteur Audio Hybride Professionnel pour Loup-Garou
+// Utilise les fichiers audio de haute qualité placés dans /public/sounds/
+// et bascule automatiquement sur le synthétiseur Web Audio en secours.
 
 class LoupGarouSoundEngine {
-  public isMuted: boolean = false;
   private ctx: AudioContext | null = null;
+  private isMuted: boolean = false;
   private nightAudio: HTMLAudioElement | null = null;
+
+  constructor() {
+    // Initialisation passive
+  }
 
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -19,81 +25,78 @@ class LoupGarouSoundEngine {
     return this.ctx;
   }
 
-  private playSoundFile(filename: string, fallbackFn: () => void, volume: number = 0.9) {
-    if (this.isMuted) return;
-    try {
-      const audio = new Audio(`/sounds/${filename}`);
-      audio.volume = volume;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          fallbackFn();
-        });
-      }
-    } catch {
-      fallbackFn();
+  setMuted(muted: boolean) {
+    this.isMuted = muted;
+    if (muted && this.nightAudio) {
+      this.nightAudio.pause();
     }
   }
 
-  // 🌙 AMBIANCE DE NUIT EN BOUCLE CONTINUE
+  // Joue un fichier audio de /public/sounds/ avec fallback synthétique
+  private playSoundFile(filename: string, fallbackSynth: () => void, volume: number = 0.8) {
+    if (this.isMuted || typeof window === 'undefined') return;
+
+    const audio = new Audio(`/sounds/${filename}`);
+    audio.volume = volume;
+    audio.play().catch(() => {
+      // Si le fichier audio n'est pas encore chargé ou bloqué, on utilise le synthétiseur Web Audio
+      fallbackSynth();
+    });
+  }
+
+  // Boucle de nuit atmosphérique
   startNightLoop() {
     if (this.isMuted || typeof window === 'undefined') return;
-    try {
-      if (!this.nightAudio) {
-        this.nightAudio = new Audio('/sounds/night.mp3');
-        this.nightAudio.loop = true;
-      }
-      this.nightAudio.volume = 0.45;
-      this.nightAudio.currentTime = 0;
-      this.nightAudio.play().catch(() => {});
-    } catch (e) {
-      console.warn('Night audio error', e);
+    if (!this.nightAudio) {
+      this.nightAudio = new Audio('/sounds/night.mp3');
+      this.nightAudio.loop = true;
+      this.nightAudio.volume = 0.35;
     }
+    this.nightAudio.play().catch(() => {
+      // Autoplay bloqué ou fichier absent
+    });
   }
 
   stopNightLoop() {
     if (this.nightAudio) {
-      try {
-        this.nightAudio.pause();
-        this.nightAudio.currentTime = 0;
-      } catch (e) {}
+      this.nightAudio.pause();
+      this.nightAudio.currentTime = 0;
     }
   }
 
-  // 1. HURLEMENT DE LOUP
+  // ==========================================
+  // BRUITAGES THÉMATIQUES DU JEU
+  // ==========================================
+
+  // 1. HURLEMENT DU LOUP-GAROU
   playWolfHowl() {
     this.playSoundFile('wolf.mp3', () => {
       const ctx = this.getContext();
       if (!ctx) return;
       const now = ctx.currentTime;
-      const dur = 4.0;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-
       osc.type = 'sawtooth';
-      filter.type = 'bandpass';
-      filter.Q.setValueAtTime(3.5, now);
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.linearRampToValueAtTime(320, now + 0.9);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 2.5);
 
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(480, now + 1.0);
-      osc.frequency.linearRampToValueAtTime(420, now + 2.5);
-      osc.frequency.exponentialRampToValueAtTime(140, now + dur);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, now);
+      filter.frequency.linearRampToValueAtTime(1100, now + 0.9);
+      filter.frequency.exponentialRampToValueAtTime(300, now + 2.5);
 
-      filter.frequency.setValueAtTime(350, now);
-      filter.frequency.exponentialRampToValueAtTime(950, now + 1.0);
-      filter.frequency.exponentialRampToValueAtTime(250, now + dur);
-
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.35, now + 0.8);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.6);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.6);
 
       osc.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(now);
-      osc.stop(now + dur);
+      osc.stop(now + 2.7);
     });
   }
 
@@ -159,14 +162,15 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 5. CARILLON MAGIQUE (VOYANTE / CUPIDON)
+  // 5. CARILLON MAGIQUE (Cupidon / Voyante)
   playMagicChime() {
     this.playSoundFile('magic.mp3', () => {
       const ctx = this.getContext();
       if (!ctx) return;
       const now = ctx.currentTime;
-      [587, 740, 880, 1175].forEach((freq, idx) => {
-        const t = now + idx * 0.08;
+      const notes = [587.33, 739.99, 880, 1174.66];
+      notes.forEach((freq, idx) => {
+        const t = now + idx * 0.12;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
@@ -204,9 +208,49 @@ class LoupGarouSoundEngine {
     });
   }
 
-  // 7. BRUME NOCTURNE
-  playNightAmbience() {
-    this.playSoundFile('night.mp3', () => {});
+  // 7. BATTEMENT DE COEUR (CHRONO / ANGOISSE)
+  playHeartbeat() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // Double battement (Lub-Dub)
+    [0, 0.15].forEach((offset, idx) => {
+      const t = now + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(idx === 0 ? 65 : 55, t);
+      osc.frequency.exponentialRampToValueAtTime(35, t + 0.12);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    });
+  }
+
+  // 8. GONG DU TRIBUNAL
+  playGong() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const freqs = [180, 240, 320];
+    freqs.forEach((f, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, now);
+      gain.gain.setValueAtTime(0.4 / (idx + 1), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 4.1);
+    });
   }
 
   playClick() {
