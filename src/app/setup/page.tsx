@@ -13,7 +13,9 @@ export default function SetupPage() {
     setSelectedRoles, 
     startGame, 
     players: existingPlayers,
-    gameMode
+    gameMode,
+    settings,
+    updateSettings
   } = useGameStore();
 
   const [mounted, setMounted] = useState(false);
@@ -89,6 +91,8 @@ export default function SetupPage() {
         isFoolRevealed: false,
         hasUsedLifePotion: false,
         hasUsedDeathPotion: false,
+        hasUsedSeerPower: false,
+        hasUsedGuardPower: false,
         isCaptain: false,
       }))
     });
@@ -145,7 +149,75 @@ export default function SetupPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* OPTIONS DE JEU / RÈGLES PERSONNALISÉES */}
+      <div className="bg-[#10141f] border border-purple-500/40 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span className="text-xs font-mono text-purple-400 font-bold uppercase tracking-wider">
+            ⚙️ Paramètres des Pouvoirs (Fréquence d'action)
+          </span>
+          <span className="text-[11px] font-mono text-slate-400">Variantes personnalisées</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Option Voyante */}
+          <div className="p-3.5 bg-black/40 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">🔮 Voyante</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-500/30">
+                  {settings.seerSingleUse ? 'Action Unique (1x)' : 'Toutes les Nuits (Standard)'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {settings.seerSingleUse 
+                  ? 'La voyante ne peut sonder une carte qu\'une seule fois dans la partie.' 
+                  : 'La voyante sonde une carte secrète chaque nuit.'}
+              </p>
+            </div>
+
+            <button
+              onClick={() => updateSettings({ seerSingleUse: !settings.seerSingleUse })}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                settings.seerSingleUse 
+                  ? 'bg-purple-600 text-white shadow-md' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              {settings.seerSingleUse ? '1 Seule Fois ✓' : 'Chaque Nuit'}
+            </button>
+          </div>
+
+          {/* Option Salvateur */}
+          <div className="p-3.5 bg-black/40 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">🛡️ Salvateur</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30">
+                  {settings.guardSingleUse ? 'Action Unique (1x)' : 'Toutes les Nuits (Standard)'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {settings.guardSingleUse 
+                  ? 'Le salvateur ne peut protéger une personne qu\'une seule fois dans la partie.' 
+                  : 'Le salvateur protège un joueur chaque nuit (jamais le même 2 nuits d\'affilée).'}
+              </p>
+            </div>
+
+            <button
+              onClick={() => updateSettings({ guardSingleUse: !settings.guardSingleUse })}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                settings.guardSingleUse 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              {settings.guardSingleUse ? '1 Seule Fois ✓' : 'Chaque Nuit'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Colonne Joueurs (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -251,33 +323,32 @@ export default function SetupPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                        {role.shortDesc}
-                      </p>
+                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">{role.shortDesc}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-800/80">
+                  {/* Contrôles d'ajout / retrait */}
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80">
                     <span 
-                      className="text-[10px] font-mono font-bold uppercase"
+                      className="text-[10px] font-mono uppercase font-bold"
                       style={{ color: role.color }}
                     >
-                      {role.team === 'WEREWOLVES' ? '🐺 Loup' : role.team === 'SOLO' ? '⚡ Solitaire' : '🛡️ Village'}
+                      {role.team === 'WEREWOLVES' ? '🐺 Loup' : role.team === 'SOLO' ? '⚡ Solo' : '🛡️ Village'}
                     </span>
 
-                    <div className="flex items-center gap-1.5 font-mono">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => handleRemoveRoleInstance(role.id)}
                         disabled={count === 0}
-                        className="w-6 h-6 rounded bg-black/50 border border-slate-700 hover:border-slate-500 disabled:opacity-30 text-white text-xs flex items-center justify-center font-bold cursor-pointer"
+                        onClick={() => handleRemoveRoleInstance(role.id)}
+                        className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer"
                       >
                         -
                       </button>
                       <button
                         type="button"
                         onClick={() => handleAddRoleInstance(role.id)}
-                        className="w-6 h-6 rounded bg-black/50 border border-slate-700 hover:border-slate-500 text-white text-xs flex items-center justify-center font-bold cursor-pointer"
+                        className="w-7 h-7 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold flex items-center justify-center text-xs transition-colors cursor-pointer"
                       >
                         +
                       </button>

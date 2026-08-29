@@ -23,6 +23,11 @@ export type GamePhase =
   | 'DAY_FOOL_REVEAL'
   | 'GAME_OVER';
 
+export interface GameSettings {
+  seerSingleUse: boolean;  // Voyante à usage unique (1x par partie)
+  guardSingleUse: boolean; // Salvateur à usage unique (1x par partie)
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -34,6 +39,8 @@ export interface Player {
   isFoolRevealed: boolean;
   hasUsedLifePotion: boolean;
   hasUsedDeathPotion: boolean;
+  hasUsedSeerPower?: boolean;
+  hasUsedGuardPower?: boolean;
   isCaptain: boolean;
 }
 
@@ -59,6 +66,7 @@ export interface NightStep {
 interface GameState {
   players: Player[];
   selectedRoles: RoleId[];
+  settings: GameSettings;
   phase: GamePhase;
   dayNumber: number;
   gameMode: 'PASS_AND_PLAY' | 'GM_ASSISTANT';
@@ -90,6 +98,7 @@ interface GameState {
   setGameMode: (mode: 'PASS_AND_PLAY' | 'GM_ASSISTANT') => void;
   setPlayers: (players: Player[]) => void;
   setSelectedRoles: (roles: RoleId[]) => void;
+  updateSettings: (settings: Partial<GameSettings>) => void;
   addPlayer: (name: string) => void;
   removePlayer: (id: string) => void;
   updatePlayerName: (id: string, name: string) => void;
@@ -128,6 +137,10 @@ export const useGameStore = create<GameState>()(
     (set, get) => ({
       players: [],
       selectedRoles: getRecommendedDeck(8),
+      settings: {
+        seerSingleUse: false,
+        guardSingleUse: false,
+      },
       phase: 'SETUP',
       dayNumber: 1,
       gameMode: 'PASS_AND_PLAY',
@@ -155,6 +168,7 @@ export const useGameStore = create<GameState>()(
       setGameMode: (gameMode) => set({ gameMode }),
       setPlayers: (players) => set({ players }),
       setSelectedRoles: (selectedRoles) => set({ selectedRoles }),
+      updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       
       addPlayer: (name) => {
         const { players } = get();
@@ -170,6 +184,8 @@ export const useGameStore = create<GameState>()(
           isFoolRevealed: false,
           hasUsedLifePotion: false,
           hasUsedDeathPotion: false,
+          hasUsedSeerPower: false,
+          hasUsedGuardPower: false,
           isCaptain: false
         };
         set({ players: [...players, newPlayer] });
@@ -239,6 +255,8 @@ export const useGameStore = create<GameState>()(
             isFoolRevealed: false,
             hasUsedLifePotion: false,
             hasUsedDeathPotion: false,
+            hasUsedSeerPower: false,
+            hasUsedGuardPower: false,
             isCaptain: false
           };
         });
@@ -264,17 +282,22 @@ export const useGameStore = create<GameState>()(
       },
 
       startNight: () => {
-        const { players, dayNumber } = get();
+        const { players, dayNumber, settings } = get();
         const hasCupid = players.some(p => p.role === 'cupid' && p.isAlive) && dayNumber === 1;
-        const hasGuard = players.some(p => p.role === 'guard' && p.isAlive);
-        const hasSeer = players.some(p => p.role === 'seer' && p.isAlive);
+        
+        const guardPlayer = players.find(p => p.role === 'guard' && p.isAlive);
+        const hasGuard = guardPlayer && (!settings.guardSingleUse || !guardPlayer.hasUsedGuardPower);
+
+        const seerPlayer = players.find(p => p.role === 'seer' && p.isAlive);
+        const hasSeer = seerPlayer && (!settings.seerSingleUse || !seerPlayer.hasUsedSeerPower);
+
         const hasWolves = players.some(p => (p.role === 'werewolf' || p.role === 'white_wolf') && p.isAlive);
         const hasWitch = players.some(p => p.role === 'witch' && p.isAlive);
 
         const steps: NightStep[] = [];
         if (hasCupid) steps.push({ role: 'cupid', roleDef: ROLES.cupid, title: 'Cupidon', script: ROLES.cupid.wakeScript || '', hint: 'Désignez les 2 amoureux', soundLabel: 'Magie', soundAction: () => sounds.playMagicChime() });
-        if (hasGuard) steps.push({ role: 'guard', roleDef: ROLES.guard, title: 'Salvateur', script: ROLES.guard.wakeScript || '', hint: 'Désignez un joueur à protéger', soundLabel: 'Protection', soundAction: () => sounds.playMagicChime() });
-        if (hasSeer) steps.push({ role: 'seer', roleDef: ROLES.seer, title: 'Voyante', script: ROLES.seer.wakeScript || '', hint: 'Désignez un joueur pour voir son rôle', soundLabel: 'Oeil Astral', soundAction: () => sounds.playMagicChime() });
+        if (hasGuard) steps.push({ role: 'guard', roleDef: ROLES.guard, title: 'Salvateur', script: ROLES.guard.wakeScript || '', hint: settings.guardSingleUse ? 'Action unique pour la partie !' : 'Désignez un joueur à protéger', soundLabel: 'Protection', soundAction: () => sounds.playMagicChime() });
+        if (hasSeer) steps.push({ role: 'seer', roleDef: ROLES.seer, title: 'Voyante', script: ROLES.seer.wakeScript || '', hint: settings.seerSingleUse ? 'Action unique pour la partie !' : 'Désignez un joueur pour voir son rôle', soundLabel: 'Oeil Astral', soundAction: () => sounds.playMagicChime() });
         if (hasWolves) steps.push({ role: 'werewolf', roleDef: ROLES.werewolf, title: 'Loups-Garous', script: ROLES.werewolf.wakeScript || '', hint: 'Désignez la proie de la meute', soundLabel: 'Hurlement', soundAction: () => sounds.playWolfHowl() });
         if (hasWitch) steps.push({ role: 'witch', roleDef: ROLES.witch, title: 'Sorcière', script: ROLES.witch.wakeScript || '', hint: 'Utilisez vos potions', soundLabel: 'Potion', soundAction: () => sounds.playPotion() });
 
@@ -300,7 +323,6 @@ export const useGameStore = create<GameState>()(
           const step = nightSteps[nextIdx];
           if (step && step.soundAction) step.soundAction();
         } else {
-          // Fin de nuit
           get().advancePhase();
         }
       },
@@ -331,16 +353,34 @@ export const useGameStore = create<GameState>()(
         sounds.startNightLoop();
       },
 
-      setNightGuardTarget: (playerId) => set({ nightTargetGuard: playerId, lastProtectedPlayerId: playerId }),
+      setNightGuardTarget: (playerId) => {
+        const { settings, players } = get();
+        const updated = players.map(p => {
+          if (p.role === 'guard' && settings.guardSingleUse && playerId) {
+            return { ...p, hasUsedGuardPower: true };
+          }
+          return p;
+        });
+        set({ players: updated, nightTargetGuard: playerId, lastProtectedPlayerId: playerId });
+      },
+
       setNightSeerTarget: (playerId) => {
-        const { players } = get();
+        const { players, settings } = get();
         const target = players.find(p => p.id === playerId) || null;
+        const updated = players.map(p => {
+          if (p.role === 'seer' && settings.seerSingleUse && playerId) {
+            return { ...p, hasUsedSeerPower: true };
+          }
+          return p;
+        });
+
         if (target) {
-          set({ nightTargetSeer: playerId, seerRevealedPlayer: { player: target, roleDef: ROLES[target.role] || ROLES.villager } });
+          set({ players: updated, nightTargetSeer: playerId, seerRevealedPlayer: { player: target, roleDef: ROLES[target.role] || ROLES.villager } });
         } else {
-          set({ nightTargetSeer: null, seerRevealedPlayer: null });
+          set({ players: updated, nightTargetSeer: null, seerRevealedPlayer: null });
         }
       },
+
       clearSeerTarget: () => set({ nightTargetSeer: null, seerRevealedPlayer: null }),
       setNightWolfTarget: (playerId) => set({ nightTargetWolf: playerId }),
       setNightWitchHeal: (heal) => set({ nightTargetWitchHeal: heal }),
@@ -733,6 +773,7 @@ export const useGameStore = create<GameState>()(
       partialize: (state) => ({
         players: state.players,
         selectedRoles: state.selectedRoles,
+        settings: state.settings,
         phase: state.phase,
         dayNumber: state.dayNumber,
         gameMode: state.gameMode,

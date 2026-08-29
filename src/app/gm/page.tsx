@@ -21,7 +21,8 @@ export default function GameMasterPage() {
     resetGame,
     dayNumber,
     winner,
-    phase
+    phase,
+    settings
   } = useGameStore();
 
   const [mounted, setMounted] = useState(false);
@@ -58,6 +59,12 @@ export default function GameMasterPage() {
 
   // Vérifier si Cupidon a déjà lié les amoureux
   const hasLoversBeenChosen = players.filter(p => p.isLover).length >= 2 || targetLovers.length >= 2;
+
+  // Vérifier si la Voyante et le Salvateur ont déjà utilisé leur pouvoir (si option unique activée)
+  const seerPlayer = players.find(p => p.role === 'seer');
+  const guardPlayer = players.find(p => p.role === 'guard');
+  const isSeerPowerAvailable = seerPlayer?.isAlive && (!settings?.seerSingleUse || !seerPlayer?.hasUsedSeerPower);
+  const isGuardPowerAvailable = guardPlayer?.isAlive && (!settings?.guardSingleUse || !guardPlayer?.hasUsedGuardPower);
 
   useEffect(() => {
     setMounted(true);
@@ -98,6 +105,8 @@ export default function GameMasterPage() {
         isFoolRevealed: false,
         hasUsedLifePotion: false,
         hasUsedDeathPotion: false,
+        hasUsedSeerPower: false,
+        hasUsedGuardPower: false,
         isCaptain: false,
       }))
     });
@@ -529,22 +538,22 @@ export default function GameMasterPage() {
       roleName: 'Salvateur',
       title: '2. Salvateur — Protection Nocturne',
       script: '« Le Salvateur se réveille, et désigne un joueur à protéger cette nuit contre les loups... »',
-      hint: 'Il ne peut pas protéger la même personne deux nuits consécutives.',
+      hint: settings?.guardSingleUse ? 'Action Unique : une seule protection pour toute la partie !' : 'Il ne peut pas protéger la même personne deux nuits consécutives.',
       roleDef: ROLES.guard,
       soundAction: () => sounds.playMagicChime(),
       soundLabel: '🛡️ Protection',
-      condition: players.some(p => p.role === 'guard' && p.isAlive),
+      condition: isGuardPowerAvailable,
     },
     {
       id: 'seer',
       roleName: 'Voyante',
       title: '3. Voyante — Sonde d\'Âme',
       script: '« La Voyante se réveille, et me montre la personne dont elle veut sonder la véritable nature... »',
-      hint: 'Montrez-lui silencieusement la carte du rôle désigné.',
+      hint: settings?.seerSingleUse ? 'Action Unique : une seule sonde pour toute la partie !' : 'Montrez-lui silencieusement la carte du rôle désigné.',
       roleDef: ROLES.seer,
       soundAction: () => sounds.playMagicChime(),
       soundLabel: '🔮 Oeil Astral',
-      condition: players.some(p => p.role === 'seer' && p.isAlive),
+      condition: isSeerPowerAvailable,
     },
     {
       id: 'werewolf',
@@ -898,6 +907,11 @@ export default function GameMasterPage() {
                           key={p.id}
                           onClick={() => {
                             setTargetGuard(p.id);
+                            // Enregistrer l'utilisation si option single-use
+                            if (settings?.guardSingleUse && guardPlayer) {
+                              const updated = players.map(pl => pl.role === 'guard' ? { ...pl, hasUsedGuardPower: true } : pl);
+                              useGameStore.setState({ players: updated });
+                            }
                             sounds.playMagicChime();
                           }}
                           className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer ${
@@ -925,6 +939,11 @@ export default function GameMasterPage() {
                           key={p.id}
                           onClick={() => {
                             setSeerTargetId(p.id);
+                            // Enregistrer l'utilisation si option single-use
+                            if (settings?.seerSingleUse && seerPlayer) {
+                              const updated = players.map(pl => pl.role === 'seer' ? { ...pl, hasUsedSeerPower: true } : pl);
+                              useGameStore.setState({ players: updated });
+                            }
                             sounds.playMagicChime();
                           }}
                           className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer ${
