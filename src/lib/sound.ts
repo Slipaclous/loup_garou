@@ -208,6 +208,26 @@ class LoupGarouSoundEngine {
     });
   }
 
+  // 6.bis BOUCLIER DU SALVATEUR
+  playShield() {
+    this.playSoundFile('shield.mp3', () => {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    });
+  }
+
   // 7. BATTEMENT DE COEUR (CHRONO / ANGOISSE)
   playHeartbeat() {
     if (this.isMuted) return;

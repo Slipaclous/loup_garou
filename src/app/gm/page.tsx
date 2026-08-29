@@ -650,8 +650,8 @@ export default function GameMasterPage() {
       script: '« Le Salvateur étend son manteau sacré sur l\'âme de son choix pour conjurer la mort... »',
       hint: settings?.guardSingleUse ? 'Action Unique pour la partie !' : 'Ne peut pas protéger la même personne deux nuits de suite.',
       roleDef: ROLES.guard,
-      soundAction: () => sounds.playMagicChime(),
-      soundLabel: '🛡️ Protection',
+      soundAction: () => sounds.playShield(),
+      soundLabel: '🛡️ Bouclier',
       condition: isGuardPowerAvailable,
     },
     {
@@ -1019,7 +1019,7 @@ export default function GameMasterPage() {
                               const updated = players.map(pl => pl.role === 'guard' ? { ...pl, hasUsedGuardPower: true } : pl);
                               useGameStore.setState({ players: updated });
                             }
-                            sounds.playMagicChime();
+                            sounds.playShield();
                           }}
                           className={`p-3 rounded-xl border text-xs font-medieval font-bold text-left transition-all cursor-pointer ${
                             isSelected
