@@ -328,7 +328,7 @@ export default function GameMasterPage() {
   }
 
   // =========================================================================
-  // 3. RÉVÉLATION CINÉMATIQUE DU MATIN (SON DE CLOCHE UNIQUEMENT)
+  // 3. RÉVÉLATION DU MATIN : SON DE CLOCHE SEUL AU DÉPART, DEATH UNIQUEMENT AU CLIC DE LA CARTE
   // =========================================================================
   if (isMorningRevealActive) {
     return (
@@ -378,6 +378,10 @@ export default function GameMasterPage() {
                           ...morningDeathCardFlipped,
                           [d.player.id]: nextFlipped
                         });
+                        // Son du glas funèbre UNIQUEMENT au moment exact où la carte se retourne
+                        if (nextFlipped) {
+                          sounds.playDeath();
+                        }
                       }}
                       size="lg"
                     />
@@ -456,6 +460,10 @@ export default function GameMasterPage() {
             onToggleReveal={() => {
               const next = !isDayCardFlipped;
               setIsDayCardFlipped(next);
+              // Glas funèbre UNIQUEMENT au moment exact où la carte se retourne
+              if (next) {
+                sounds.playDeath();
+              }
             }}
             size="lg"
           />
@@ -573,7 +581,7 @@ export default function GameMasterPage() {
     }
   };
 
-  // Passer à la phase de Jour avec son de cloche uniquement
+  // Passer à la phase de Jour : SEULE LA CLOCHE JOUE ICI !
   const handleWakeUpVillage = () => {
     sounds.stopNightLoop();
     sounds.playBell();
@@ -649,7 +657,7 @@ export default function GameMasterPage() {
     setIsMorningRevealActive(true);
   };
 
-  // Passer à la Nuit Suivante (Seule la musique de nuit démarre, pas de hurlement intempestif)
+  // Passer à la Nuit Suivante (Seule la musique de nuit démarre)
   const handleSleepVillage = () => {
     setActiveCycleTab('NIGHT');
     setCurrentStepIndex(0);

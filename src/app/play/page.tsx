@@ -26,7 +26,7 @@ export default function PlayPage() {
     logs,
     startNight,
     nextNightStep,
-    setNightTargetWolf,
+    setNightWolfTarget,
     setNightGuardTarget,
     setNightCupidLovers,
     setNightSeerTarget,
@@ -59,7 +59,7 @@ export default function PlayPage() {
 
   // Boucle sonore de nuit automatique sur /play
   useEffect(() => {
-    if (phase === 'NIGHT_ACTION') {
+    if (phase === 'NIGHT_ACTION' || phase.startsWith('NIGHT')) {
       sounds.startNightLoop();
     } else {
       sounds.stopNightLoop();
@@ -69,19 +69,28 @@ export default function PlayPage() {
     };
   }, [phase]);
 
+  // Confettis de victoire
   useEffect(() => {
-    if (phase === 'GAME_OVER') {
-      confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
-    }
-  }, [phase]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => setTimerSeconds((prev) => prev - 1), 1000);
-    } else if (timerSeconds === 0) {
-      setIsTimerRunning(false);
+    if (phase === 'GAME_OVER' && winner) {
       sounds.playBell();
+      confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.5 }
+      });
+    }
+  }, [phase, winner]);
+
+  // Minuteur du débat
+  useEffect(() => {
+    let interval: any;
+    if (isTimerRunning && timerSeconds > 0) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => prev - 1);
+      }, 1000);
+    } else if (timerSeconds === 0 && isTimerRunning) {
+      sounds.playBell();
+      setIsTimerRunning(false);
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds]);
@@ -95,11 +104,12 @@ export default function PlayPage() {
   }
 
   const livingPlayers = players.filter((p) => p.isAlive);
-  const currentNightRole = nightSteps[activeNightStepIndex] || null;
-  const currentNightRoleDef = currentNightRole ? ROLES[currentNightRole] : null;
+  const currentNightStep = nightSteps[activeNightStepIndex] || null;
+  const currentNightRole = currentNightStep ? currentNightStep.role : null;
+  const currentNightRoleDef = currentNightStep ? currentNightStep.roleDef : null;
 
   // 1. REVELATION SECRETE DES ROLES
-  if (phase === 'REVEAL_ROLES') {
+  if (phase === 'ROLE_REVEAL' || phase === 'REVEAL_ROLES') {
     const currentPlayer = players[revealIndex] || players[0];
 
     const handleNextPlayer = () => {
@@ -113,13 +123,13 @@ export default function PlayPage() {
 
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-xl mx-auto w-full space-y-8">
-        <div className="w-full bg-[#0d1017]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col items-center text-center space-y-6 shadow-2xl shadow-purple-950/20">
-          <div className="space-y-1.5">
+        <div className="w-full bg-[#10141f] border-2 border-purple-500/40 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 shadow-2xl">
+          <div className="space-y-1">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-[11px] font-mono text-amber-400 uppercase tracking-widest font-bold">
-                Distribution Secrète des Cartes
+              <span className="text-xs font-mono text-purple-400 uppercase tracking-widest font-bold">
+                Distribution Secrète des Rôles
               </span>
-              <span className="text-xs font-mono px-2 py-0.5 bg-white/5 border border-white/10 rounded text-slate-300">
+              <span className="text-xs font-mono px-2 py-0.5 bg-purple-950 text-purple-300 rounded border border-purple-500/30">
                 {revealIndex + 1} / {players.length}
               </span>
             </div>
@@ -127,8 +137,8 @@ export default function PlayPage() {
             <h2 className="text-2xl sm:text-3xl font-display text-white font-bold">
               Passez l'écran à <span className="text-amber-300 underline underline-offset-4">{currentPlayer.name}</span>
             </h2>
-            <p className="text-xs text-neutral-400">
-              Touchez la carte pour découvrir votre rôle en toute discrétion.
+            <p className="text-xs text-slate-400">
+              Touchez la carte pour révéler votre rôle en secret, puis cachez-la.
             </p>
           </div>
 
@@ -136,16 +146,18 @@ export default function PlayPage() {
             roleId={currentPlayer.role}
             playerName={currentPlayer.name}
             isRevealed={isCardFlipped}
-            onToggleReveal={() => setIsCardFlipped(!isCardFlipped)}
+            onToggleReveal={() => {
+              setIsCardFlipped(!isCardFlipped);
+            }}
             size="lg"
           />
 
-          <div className="w-full max-w-xs space-y-2">
+          <div className="w-full max-w-xs space-y-3">
             <button
               onClick={handleNextPlayer}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 transition-all uppercase tracking-wider font-mono cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all uppercase tracking-wider font-mono cursor-pointer"
             >
-              {revealIndex + 1 < players.length ? 'Joueur Suivant &rarr;' : 'Commencer la Nuit 🌙'}
+              {revealIndex + 1 < players.length ? 'Joueur Suivant &rarr;' : 'Terminer & Commencer la Nuit 🌙'}
             </button>
           </div>
         </div>
@@ -153,56 +165,38 @@ export default function PlayPage() {
     );
   }
 
-  // 2. PHASE DE NUIT
-  if (phase === 'NIGHT_ACTION' && currentNightRoleDef) {
+  // 2. PHASES DE NUIT STEP-BY-STEP
+  if (phase === 'NIGHT_ACTION' && currentNightStep && currentNightRoleDef) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-3xl mx-auto w-full space-y-6">
-        {/* Timeline Header Nocturne */}
-        <div className="w-full flex items-center justify-between px-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: currentNightRoleDef.color }} />
-            <span className="text-xs font-mono text-neutral-300 font-bold uppercase tracking-wider">
-              Nuit {dayNumber} • Déroulement Nocturne
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full space-y-6">
+        <div className="w-full bg-[#10141f] border-2 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl" style={{ borderColor: currentNightRoleDef.color }}>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider" style={{ color: currentNightRoleDef.color }}>
+              Nuit {dayNumber} • Étape {activeNightStepIndex + 1} / {nightSteps.length}
             </span>
+            <span className="text-xs font-mono text-neutral-400">Ambiance Nocturne Active 🌙</span>
           </div>
-          <span className="text-xs font-mono text-purple-300 bg-purple-950/80 px-3 py-1 rounded-full border border-purple-500/30">
-            Étape {activeNightStepIndex + 1} sur {nightSteps.length}
-          </span>
-        </div>
 
-        {/* Panneau Actif du Rôle */}
-        <div className="w-full bg-[#0d1017]/95 backdrop-blur-xl border-2 rounded-3xl p-6 sm:p-8 space-y-6 text-left shadow-2xl transition-all" style={{ borderColor: `${currentNightRoleDef.color}80` }}>
-          {/* Header Rôle avec Artwork */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 border-b border-white/10 pb-6">
-            <div className="w-24 h-24 shrink-0 bg-black/60 rounded-2xl border-2 border-white/15 flex items-center justify-center p-2 shadow-xl">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="w-32 h-32 shrink-0 bg-black/60 rounded-2xl border-2 border-white/15 p-2 flex items-center justify-center shadow-xl">
               <RoleArtwork roleId={currentNightRoleDef.id} className="w-full h-full" />
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider block" style={{ color: currentNightRoleDef.color }}>
-                {currentNightRoleDef.subtitle}
-              </span>
-              <h1 className="text-3xl sm:text-4xl font-display text-white font-bold tracking-tight">
-                {currentNightRoleDef.name}
-              </h1>
-              <p className="text-sm font-serif italic text-neutral-200 pt-1">
-                « {currentNightRoleDef.wakeScript} »
+
+            <div className="space-y-2 text-center sm:text-left flex-1">
+              <h2 className="text-2xl sm:text-3xl font-display text-white font-bold">{currentNightStep.title}</h2>
+              <p className="text-xs sm:text-sm text-neutral-300 italic bg-black/40 p-3 rounded-xl border border-white/5">
+                « {currentNightStep.script} »
               </p>
+              <p className="text-xs text-neutral-400">💡 {currentNightStep.hint}</p>
             </div>
           </div>
 
-          {/* ACTIONS SPECIFIQUES */}
           {/* CUPIDON */}
           {currentNightRole === 'cupid' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-pink-400 font-bold uppercase">
-                  Choisissez les 2 amoureux :
-                </span>
-                <span className="text-xs font-mono text-neutral-400">
-                  {cupidSelection.length} / 2 sélectionnés
-                </span>
-              </div>
-
+              <span className="text-xs font-mono text-pink-400 font-bold uppercase block">
+                Sélectionnez 2 amoureux ({cupidSelection.length} / 2) :
+              </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {players.map((p) => {
                   const isSelected = cupidSelection.includes(p.id);
@@ -211,7 +205,7 @@ export default function PlayPage() {
                       key={p.id}
                       onClick={() => {
                         let next: string[];
-                        if (isSelected) {
+                        if (cupidSelection.includes(p.id)) {
                           next = cupidSelection.filter((id) => id !== p.id);
                         } else if (cupidSelection.length < 2) {
                           next = [...cupidSelection, p.id];
@@ -224,14 +218,14 @@ export default function PlayPage() {
                           sounds.playMagicChime();
                         }
                       }}
-                      className={`p-3.5 rounded-2xl border text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer ${
-                        isSelected 
-                          ? 'bg-pink-950 border-pink-500 text-pink-100 shadow-lg shadow-pink-500/20 scale-[1.02]' 
-                          : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-slate-500'
+                      className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all truncate cursor-pointer ${
+                        isSelected
+                          ? 'bg-pink-950/80 border-pink-500 text-pink-200 shadow-lg shadow-pink-500/20'
+                          : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-white/30'
                       }`}
                     >
-                      <span className="truncate">{p.name}</span>
-                      {isSelected && <span className="text-pink-400 font-bold">♥</span>}
+                      <span>{p.name}</span>
+                      {isSelected && <span className="block text-[10px] text-pink-400">♥ Amoureux</span>}
                     </button>
                   );
                 })}
@@ -247,26 +241,27 @@ export default function PlayPage() {
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {livingPlayers.map((p) => {
-                  const isLast = p.id === lastProtectedPlayerId;
-                  const isSelected = nightTargetGuard === p.id;
+                  const isProtected = nightTargetGuard === p.id;
+                  const isLastProtected = lastProtectedPlayerId === p.id;
                   return (
                     <button
                       key={p.id}
-                      disabled={isLast}
+                      disabled={isLastProtected}
                       onClick={() => {
                         setNightGuardTarget(p.id);
                         sounds.playMagicChime();
                       }}
-                      className={`p-3.5 rounded-2xl border text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer ${
-                        isLast 
-                          ? 'opacity-30 cursor-not-allowed bg-black/30 border-white/5 text-neutral-600' 
-                          : isSelected 
-                            ? 'bg-blue-950 border-blue-500 text-blue-100 shadow-lg shadow-blue-500/20 scale-[1.02]' 
-                            : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-slate-500'
+                      className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all truncate cursor-pointer ${
+                        isProtected
+                          ? 'bg-blue-950/80 border-blue-500 text-blue-200 shadow-lg shadow-blue-500/20'
+                          : isLastProtected
+                            ? 'bg-black/30 border-white/5 text-neutral-600 cursor-not-allowed'
+                            : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-white/30'
                       }`}
                     >
-                      <span className="truncate">{p.name}</span>
-                      {isLast ? <span className="text-[10px] text-red-400">Hier</span> : isSelected && <span className="text-blue-400">🛡️</span>}
+                      <span>{p.name}</span>
+                      {isProtected && <span className="block text-[10px] text-blue-400">🛡️ Protégé</span>}
+                      {isLastProtected && <span className="block text-[10px] text-neutral-500">(Nuit préc.)</span>}
                     </button>
                   );
                 })}
@@ -276,11 +271,11 @@ export default function PlayPage() {
 
           {/* VOYANTE */}
           {currentNightRole === 'seer' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {!seerRevealedPlayer ? (
                 <>
                   <span className="text-xs font-mono text-purple-400 font-bold uppercase block">
-                    Touchez un joueur pour sonder son âme :
+                    Touchez un joueur pour sonder sa véritable identité :
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {livingPlayers.map((p) => (
@@ -318,22 +313,22 @@ export default function PlayPage() {
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {livingPlayers.map((p) => {
-                  const isSelected = nightTargetWolf === p.id;
+                  const isTargeted = nightTargetWolf === p.id;
                   return (
                     <button
                       key={p.id}
                       onClick={() => {
-                        setNightTargetWolf(p.id);
+                        setNightWolfTarget(p.id);
                         sounds.playWolfHowl();
                       }}
-                      className={`p-3.5 rounded-2xl border text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer ${
-                        isSelected 
-                          ? 'bg-red-950 border-red-500 text-red-100 shadow-lg shadow-red-600/30 scale-[1.02]' 
-                          : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-red-500/50'
+                      className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all truncate cursor-pointer ${
+                        isTargeted
+                          ? 'bg-red-950/80 border-red-500 text-red-200 shadow-lg shadow-red-500/20'
+                          : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-white/30'
                       }`}
                     >
-                      <span className="truncate">{p.name}</span>
-                      {isSelected && <span className="text-red-400 font-black">🐺 Cible</span>}
+                      <span>{p.name}</span>
+                      {isTargeted && <span className="block text-[10px] text-red-400">🐺 Proie</span>}
                     </button>
                   );
                 })}
@@ -344,54 +339,49 @@ export default function PlayPage() {
           {/* SORCIÈRE */}
           {currentNightRole === 'witch' && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-[#121622] border border-white/10 rounded-2xl flex items-center justify-between text-xs">
-                <span className="text-neutral-400 font-medium">Victime désignée par les loups :</span>
-                <span className="text-red-400 font-bold font-mono">
-                  {nightTargetWolf ? players.find((p) => p.id === nightTargetWolf)?.name : 'Aucune'}
-                </span>
+              <div className="p-4 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-white block">Potion de Guérison</span>
+                  <span className="text-[11px] text-neutral-400">
+                    Victime des loups : <strong className="text-red-400">{players.find((p) => p.id === nightTargetWolf)?.name || 'Personne'}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    const next = !witchHeals;
+                    setWitchHeals(next);
+                    setNightWitchActions(next, witchKillsId);
+                    sounds.playPotion();
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    witchHeals ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white/10 text-neutral-300 hover:text-white'
+                  }`}
+                >
+                  {witchHeals ? 'Sauvé ✓' : 'Sauver'}
+                </button>
               </div>
 
-              {nightTargetWolf && (
-                <div className="flex items-center justify-between p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-xs">
-                  <div>
-                    <span className="font-bold text-emerald-300 block">Potion de Guérison (1x par partie)</span>
-                    <span className="text-[11px] text-neutral-400">Sauver la victime</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const next = !witchHeals;
-                      setWitchHeals(next);
-                      setNightWitchActions(next, witchKillsId);
-                      sounds.playPotion();
-                    }}
-                    className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                      witchHeals ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
-                    }`}
-                  >
-                    {witchHeals ? 'Sauvetage Actif ✓' : 'Utiliser Potion'}
-                  </button>
-                </div>
-              )}
-
               <div className="space-y-2">
-                <span className="text-xs font-mono text-neutral-300 font-bold uppercase block">Potion d'Empoisonnement (Tuer un suspect) :</span>
+                <span className="text-xs font-mono text-neutral-400 uppercase font-bold block">Potion de Mort (Optionnel) :</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {livingPlayers.map((p) => {
-                    const isSelected = witchKillsId === p.id;
+                    const isTarget = witchKillsId === p.id;
                     return (
                       <button
                         key={p.id}
                         onClick={() => {
-                          const target = isSelected ? null : p.id;
-                          setWitchKillsId(target);
-                          setNightWitchActions(witchHeals, target);
-                          if (target) sounds.playPotion();
+                          const next = isTarget ? null : p.id;
+                          setWitchKillsId(next);
+                          setNightWitchActions(witchHeals, next);
+                          if (next) sounds.playPotion();
                         }}
-                        className={`p-3 rounded-xl border text-xs font-bold text-left truncate transition-all cursor-pointer ${
-                          isSelected ? 'bg-purple-950 border-purple-500 text-purple-200 shadow-md shadow-purple-500/30' : 'bg-[#121622] border-white/10 text-neutral-400 hover:text-white'
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left truncate transition-all cursor-pointer ${
+                          isTarget
+                            ? 'bg-purple-950/80 border-purple-500 text-purple-200'
+                            : 'bg-[#121622] border-white/10 text-neutral-300 hover:border-white/30'
                         }`}
                       >
-                        {p.name} {isSelected && '💀'}
+                        {p.name} {isTarget && '💀'}
                       </button>
                     );
                   })}
@@ -400,16 +390,15 @@ export default function PlayPage() {
             </div>
           )}
 
-          {/* Bouton Suivant */}
-          <div className="pt-4 border-t border-white/10">
+          <div className="pt-4 border-t border-white/10 flex justify-end">
             <button
               onClick={() => {
                 clearSeerTarget();
                 nextNightStep();
               }}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-xl shadow-purple-600/25 transition-all cursor-pointer"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-purple-600/30 cursor-pointer"
             >
-              {activeNightStepIndex + 1 < nightSteps.length ? 'Rôle Suivant &rarr;' : 'Lever du Soleil (Matin) ☀️'}
+              Étape Suivante &rarr;
             </button>
           </div>
         </div>
@@ -417,195 +406,61 @@ export default function PlayPage() {
     );
   }
 
-  // 3. PHASE DE JOUR & VOTE
-  if (phase === 'DAY_START' || phase === 'DAY_VOTE' || phase === 'DAY_HUNTER') {
-    return (
-      <div className="flex-1 flex flex-col px-4 sm:px-6 py-8 max-w-5xl mx-auto w-full space-y-6">
-        {/* Header Jour */}
-        <div className="p-6 sm:p-8 bg-[#0d1017]/95 backdrop-blur-xl border border-amber-500/30 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-          <div>
-            <span className="text-xs font-mono text-amber-400 uppercase tracking-widest font-bold">
-              Conseil du Village
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-display text-white font-bold mt-1">
-              Jour {dayNumber}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3 font-mono text-xs">
-            <span className="px-4 py-2 bg-black/60 border border-white/10 rounded-xl text-amber-300 font-bold text-lg shadow-inner">
-              ⏱ {Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, '0')}
-            </span>
-            <button
-              onClick={() => setIsTimerRunning(!isTimerRunning)}
-              className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-bold hover:bg-amber-500/30 border border-amber-500/30 cursor-pointer transition-all"
-            >
-              {isTimerRunning ? 'Pause' : 'Lancer Débat'}
-            </button>
-          </div>
-        </div>
-
-        {/* Rapport des morts */}
-        {lastDeaths.length > 0 ? (
-          <div className="p-6 bg-red-950/60 border-2 border-red-500/50 rounded-2xl space-y-2.5 shadow-xl">
-            <span className="text-xs font-mono text-red-400 font-bold uppercase block tracking-wider">
-              ☠️ Bilan Tragique de la Nuit :
-            </span>
-            {lastDeaths.map((d, i) => (
-              <p key={i} className="text-sm sm:text-base text-neutral-200">
-                <strong className="text-red-300 font-bold underline underline-offset-2">{d.player.name}</strong> ({ROLES[d.player.role].name}) — {d.reason}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <div className="p-5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-sm text-emerald-300 font-bold text-center shadow-lg">
-            🕊️ Aucun mort cette nuit ! Le village a été parfaitement protégé.
-          </div>
-        )}
-
-        {/* Chasseur */}
-        {phase === 'DAY_HUNTER' && (
-          <div className="p-6 bg-orange-950/80 border-2 border-orange-500 rounded-2xl space-y-3 shadow-xl">
-            <span className="text-xs font-mono text-orange-400 font-bold uppercase block tracking-wider">
-              🎯 Tir Fatal du Chasseur
-            </span>
-            <p className="text-xs text-neutral-300">Dans son dernier souffle, le Chasseur abat un suspect :</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {livingPlayers.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    resolveHunterShot(p.id);
-                    sounds.playGunshot();
-                  }}
-                  className="p-3 bg-black/60 border border-orange-500 hover:bg-orange-600 hover:text-white rounded-xl text-xs font-bold text-orange-200 truncate transition-all cursor-pointer"
-                >
-                  Abattre {p.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tribunal / Vote */}
-        {phase === 'DAY_VOTE' && (
-          <div className="p-6 bg-[#121622] border-2 border-red-500/40 rounded-2xl space-y-4 shadow-xl">
-            <span className="text-xs font-mono text-red-400 font-bold uppercase block tracking-wider">
-              🔥 Tribunal du Peuple — Désigner le condamné au bûcher :
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {livingPlayers.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    if (confirm(`Exécuter ${p.name} suite au vote du village ?`)) {
-                      eliminatePlayer(p.id, 'Condamné et brûlé sur la place publique par le village.');
-                      sounds.playDeath();
-                    }
-                  }}
-                  className="p-4 bg-[#0d1017] border border-white/10 hover:border-red-500 hover:bg-red-950/40 rounded-2xl text-left transition-all cursor-pointer shadow"
-                >
-                  <span className="text-sm font-bold text-white block truncate">{p.name}</span>
-                  <span className="text-xs text-red-400 font-mono mt-1 block">Condamner &rarr;</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Actions du jour */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
-          {phase === 'DAY_START' && (
-            <button
-              onClick={startVote}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-lg shadow-red-600/20 cursor-pointer"
-            >
-              Passer au Vote du Village
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              startNight();
-              sounds.playWolfHowl();
-            }}
-            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-700 to-purple-800 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono ml-auto shadow-lg shadow-indigo-700/20 cursor-pointer"
-          >
-            Endormir le Village (Nuit {dayNumber + 1}) 🌙 &rarr;
-          </button>
-        </div>
-
-        {/* Liste des Joueurs */}
-        <div className="space-y-3 pt-4">
-          <span className="text-xs font-mono text-neutral-400 uppercase tracking-widest font-bold block">
-            Habitants ({livingPlayers.length} en vie / {players.length})
+  // 3. PHASE DE JOUR
+  return (
+    <div className="flex-1 flex flex-col px-4 sm:px-8 py-8 max-w-5xl mx-auto w-full space-y-6">
+      {/* Header Jour */}
+      <div className="bg-[#10141f] border border-amber-500/40 rounded-2xl p-6 flex items-center justify-between shadow-xl">
+        <div>
+          <span className="text-xs font-mono text-amber-400 uppercase font-bold tracking-widest">
+            Jour {dayNumber} • Tribunal Populaire
           </span>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {players.map((p) => (
-              <div
-                key={p.id}
-                className={`p-3.5 rounded-2xl border text-xs font-mono flex items-center justify-between ${
-                  p.isAlive ? 'bg-[#0d1017] border-white/10 text-white shadow' : 'bg-black/30 border-red-900/20 text-neutral-500 line-through'
-                }`}
-              >
-                <span className="truncate font-bold">{p.name}</span>
-                {p.isLover && p.isAlive && <span className="text-pink-500 font-bold no-underline">♥</span>}
+          <h2 className="text-2xl font-display text-white font-bold mt-1">Place Publique de Thiercelieux</h2>
+        </div>
+
+        <button
+          onClick={startVote}
+          className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase font-mono shadow-lg shadow-amber-600/30 cursor-pointer"
+        >
+          Ouvrir le Vote &rarr;
+        </button>
+      </div>
+
+      {/* Grille des joueurs vivants */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+        {livingPlayers.map((p) => {
+          const role = ROLES[p.role] || ROLES.villager;
+          return (
+            <div
+              key={p.id}
+              className="p-4 bg-[#10141f] border rounded-xl flex items-center justify-between gap-3 shadow-md"
+              style={{ borderColor: `${role.color}40`, borderLeftWidth: '4px', borderLeftColor: role.color }}
+            >
+              <div className="w-12 h-12 shrink-0 bg-black/50 rounded-lg border border-white/10 p-1 flex items-center justify-center">
+                <RoleArtwork roleId={role.id} className="w-full h-full" />
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // 4. GAME OVER
-  if (phase === 'GAME_OVER') {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 max-w-lg mx-auto w-full text-center space-y-8">
-        <div className="w-full bg-[#0d1017]/95 backdrop-blur-xl border-2 border-amber-500/40 rounded-3xl p-8 space-y-6 text-center shadow-2xl">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-500 to-red-600 mx-auto flex items-center justify-center text-white text-3xl shadow-xl">
-            🏆
-          </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-white truncate">{p.name}</h4>
+                <span className="text-xs font-bold block" style={{ color: role.color }}>
+                  {role.name}
+                </span>
+              </div>
 
-          <div className="space-y-1">
-            <span className="text-xs font-mono text-amber-400 uppercase font-bold tracking-widest">Partie Terminée</span>
-            <h1 className="text-3xl sm:text-4xl font-display font-bold text-white">
-              {winner === 'WEREWOLVES' && 'Victoire des Loups-Garous !'}
-              {winner === 'VILLAGE' && 'Victoire du Village !'}
-              {winner === 'LOVERS' && 'Victoire des Amoureux !'}
-              {winner === 'WHITE_WOLF' && 'Victoire du Loup Blanc !'}
-            </h1>
-          </div>
-
-          <p className="text-sm text-neutral-300 leading-relaxed">
-            {logs[logs.length - 1]?.message}
-          </p>
-
-          <div className="space-y-2 pt-4 border-t border-white/10 text-left">
-            <span className="text-[11px] font-mono text-neutral-400 uppercase font-bold block">Rôles Révélés :</span>
-            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 font-mono text-xs">
-              {players.map((p) => (
-                <div key={p.id} className="flex justify-between text-neutral-200 p-2 rounded-lg bg-black/40 border border-white/5">
-                  <span>{p.name}</span>
-                  <span className="font-bold" style={{ color: ROLES[p.role].color }}>{ROLES[p.role].name}</span>
-                </div>
-              ))}
+              <button
+                onClick={() => {
+                  if (confirm(`Éliminer ${p.name} ?`)) {
+                    eliminatePlayer(p.id);
+                  }
+                }}
+                className="px-3 py-1.5 bg-red-950/80 border border-red-500/40 text-red-300 hover:bg-red-900 rounded-lg font-bold text-xs cursor-pointer font-mono"
+              >
+                Condamner
+              </button>
             </div>
-          </div>
-
-          <button
-            onClick={() => {
-              resetGame();
-              router.push('/setup');
-            }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-red-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-xl transition-all cursor-pointer"
-          >
-            Rejouer une Partie &rarr;
-          </button>
-        </div>
+          );
+        })}
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

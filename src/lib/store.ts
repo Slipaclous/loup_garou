@@ -1,16 +1,26 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { RoleId, ROLES, getRecommendedDeck } from './roles';
+import { ROLES, RoleId, DEFAULT_PLAYER_NAMES, getRecommendedDeck, RoleDef } from './roles';
 import { sounds } from './sound';
 
-export type GamePhase = 
+export type GamePhase =
   | 'SETUP'
   | 'REVEAL_ROLES'
+  | 'ROLE_REVEAL'
   | 'NIGHT_START'
   | 'NIGHT_ACTION'
+  | 'NIGHT_CUPID'
+  | 'NIGHT_LOVERS_REVEAL'
+  | 'NIGHT_GUARD'
+  | 'NIGHT_SEER'
+  | 'NIGHT_WEREWOLVES'
+  | 'NIGHT_WITCH'
+  | 'NIGHT_END'
   | 'DAY_START'
+  | 'DAY_DISCUSS'
   | 'DAY_VOTE'
   | 'DAY_HUNTER'
+  | 'DAY_FOOL_REVEAL'
   | 'GAME_OVER';
 
 export interface Player {
@@ -20,12 +30,11 @@ export interface Player {
   isAlive: boolean;
   isLover: boolean;
   isProtected: boolean;
-  elderLives: number; // 2 for elder, 1 for normal
+  elderLives: number;
   isFoolRevealed: boolean;
   hasUsedLifePotion: boolean;
   hasUsedDeathPotion: boolean;
   isCaptain: boolean;
-  customNotes?: string;
 }
 
 export interface GameLog {
@@ -34,124 +43,195 @@ export interface GameLog {
   phase: 'NIGHT' | 'DAY';
   message: string;
   timestamp: Date;
-  type: 'INFO' | 'DEATH' | 'ACTION' | 'VICTORY';
+  type: 'DEATH' | 'INFO' | 'ACTION' | 'VICTORY';
+}
+
+export interface NightStep {
+  role: RoleId;
+  roleDef: RoleDef;
+  title: string;
+  script: string;
+  hint: string;
+  soundLabel: string;
+  soundAction: () => void;
 }
 
 interface GameState {
   players: Player[];
   selectedRoles: RoleId[];
-  gameMode: 'PASS_AND_PLAY' | 'GM_ASSISTANT';
   phase: GamePhase;
   dayNumber: number;
+  gameMode: 'PASS_AND_PLAY' | 'GM_ASSISTANT';
+  
+  // Nuit en cours
   activeNightStepIndex: number;
-  nightSteps: RoleId[];
+  nightSteps: NightStep[];
+  nightTargetGuard: string | null;
+  lastProtectedPlayerId: string | null;
+  nightTargetSeer: string | null;
   nightTargetWolf: string | null;
   nightTargetWitchHeal: boolean;
   nightTargetWitchKill: string | null;
-  nightTargetGuard: string | null;
-  lastProtectedPlayerId: string | null;
-  nightLoversChosen: [string, string] | null;
-  hunterPendingPlayerId: string | null;
-  seerRevealedPlayer: { player: Player; roleDef: typeof ROLES[RoleId] } | null;
+  nightTargetCupid: [string, string] | null;
+  
+  // États de transition
+  revealingPlayerIndex: number;
   lastDeaths: { player: Player; reason: string }[];
+  hunterPendingPlayerId: string | null;
+  seerRevealedPlayer: { player: Player; roleDef: RoleDef } | null;
   winner: 'VILLAGE' | 'WEREWOLVES' | 'LOVERS' | 'WHITE_WOLF' | null;
+  
+  // Logs & Sons
   logs: GameLog[];
   soundEnabled: boolean;
-
-  // Actions
-  toggleSound: () => void;
-  setGameMode: (mode: 'PASS_AND_PLAY' | 'GM_ASSISTANT') => void;
-  setPlayersList: (names: string[]) => void;
-  setSelectedRoles: (roles: RoleId[]) => void;
-  autoBalanceRoles: () => void;
-  startGame: () => void;
-  resetGame: () => void;
+  isSoundMuted: boolean;
   
-  // Night resolution
+  // Actions
+  setGameMode: (mode: 'PASS_AND_PLAY' | 'GM_ASSISTANT') => void;
+  setPlayers: (players: Player[]) => void;
+  setSelectedRoles: (roles: RoleId[]) => void;
+  addPlayer: (name: string) => void;
+  removePlayer: (id: string) => void;
+  updatePlayerName: (id: string, name: string) => void;
+  toggleSound: () => void;
+  
+  // Déroulement du jeu
+  startGame: () => void;
   startNight: () => void;
   nextNightStep: () => void;
-  setNightTargetWolf: (playerId: string | null) => void;
-  setNightGuardTarget: (playerId: string | null) => void;
-  setNightCupidLovers: (p1: string, p2: string) => void;
-  setNightSeerTarget: (playerId: string) => void;
-  clearSeerTarget: () => void;
-  setNightWitchActions: (heal: boolean, killPlayerId: string | null) => void;
-  resolveNight: () => void;
-
-  // Day resolution
+  nextRevealCard: () => void;
+  endRoleReveal: () => void;
   startVote: () => void;
-  eliminatePlayer: (playerId: string, reason: string) => void;
+  
+  // Actions de nuit
+  setNightGuardTarget: (playerId: string | null) => void;
+  setNightSeerTarget: (playerId: string | null) => void;
+  clearSeerTarget: () => void;
+  setNightWolfTarget: (playerId: string | null) => void;
+  setNightWitchHeal: (heal: boolean) => void;
+  setNightWitchKill: (playerId: string | null) => void;
+  setNightWitchActions: (heals: boolean, killsId: string | null) => void;
+  setNightCupidLovers: (p1Id: string, p2Id: string) => void;
+  
+  // Avancement des phases
+  advancePhase: () => void;
+  eliminatePlayer: (playerId: string, reason?: string) => void;
   resolveHunterShot: (targetPlayerId: string) => void;
   setCaptain: (playerId: string) => void;
-  addCustomLog: (message: string, type?: GameLog['type']) => void;
   checkVictory: () => 'VILLAGE' | 'WEREWOLVES' | 'LOVERS' | 'WHITE_WOLF' | null;
+  resetGame: () => void;
+  addCustomLog: (message: string, type?: 'DEATH' | 'INFO' | 'ACTION' | 'VICTORY') => void;
 }
 
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       players: [],
-      selectedRoles: ['werewolf', 'werewolf', 'seer', 'witch', 'hunter', 'villager'],
-      gameMode: 'PASS_AND_PLAY',
+      selectedRoles: getRecommendedDeck(8),
       phase: 'SETUP',
-      dayNumber: 0,
+      dayNumber: 1,
+      gameMode: 'PASS_AND_PLAY',
+      
       activeNightStepIndex: 0,
       nightSteps: [],
+      nightTargetGuard: null,
+      lastProtectedPlayerId: null,
+      nightTargetSeer: null,
       nightTargetWolf: null,
       nightTargetWitchHeal: false,
       nightTargetWitchKill: null,
-      nightTargetGuard: null,
-      lastProtectedPlayerId: null,
-      nightLoversChosen: null,
+      nightTargetCupid: null,
+      
+      revealingPlayerIndex: 0,
+      lastDeaths: [],
       hunterPendingPlayerId: null,
       seerRevealedPlayer: null,
-      lastDeaths: [],
       winner: null,
+      
       logs: [],
       soundEnabled: true,
-
-      toggleSound: () => {
-        const next = !get().soundEnabled;
-        sounds.isMuted = !next;
-        set({ soundEnabled: next });
-      },
+      isSoundMuted: false,
 
       setGameMode: (gameMode) => set({ gameMode }),
-
-      setPlayersList: (names) => {
-        const currentSelected = get().selectedRoles;
-        let newRoles = [...currentSelected];
-        if (newRoles.length !== names.length) {
-          newRoles = getRecommendedDeck(names.length);
-        }
-        set({ selectedRoles: newRoles });
+      setPlayers: (players) => set({ players }),
+      setSelectedRoles: (selectedRoles) => set({ selectedRoles }),
+      
+      addPlayer: (name) => {
+        const { players } = get();
+        if (players.length >= 18) return;
+        const newPlayer: Player = {
+          id: `p-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: name.trim() || `Joueur ${players.length + 1}`,
+          role: 'villager',
+          isAlive: true,
+          isLover: false,
+          isProtected: false,
+          elderLives: 1,
+          isFoolRevealed: false,
+          hasUsedLifePotion: false,
+          hasUsedDeathPotion: false,
+          isCaptain: false
+        };
+        set({ players: [...players, newPlayer] });
       },
 
-      setSelectedRoles: (selectedRoles) => set({ selectedRoles }),
+      removePlayer: (id) => {
+        const { players } = get();
+        set({ players: players.filter((p) => p.id !== id) });
+      },
 
-      autoBalanceRoles: () => {
-        const count = get().players.length || 6;
-        set({ selectedRoles: getRecommendedDeck(count) });
+      updatePlayerName: (id, name) => {
+        const { players } = get();
+        set({
+          players: players.map((p) => (p.id === id ? { ...p, name: name.trim() } : p))
+        });
+      },
+
+      toggleSound: () => {
+        const current = get().soundEnabled;
+        set({ soundEnabled: !current, isSoundMuted: current });
+      },
+
+      resetGame: () => {
+        sounds.stopNightLoop();
+        set({
+          phase: 'SETUP',
+          dayNumber: 1,
+          activeNightStepIndex: 0,
+          nightSteps: [],
+          nightTargetGuard: null,
+          lastProtectedPlayerId: null,
+          nightTargetSeer: null,
+          nightTargetWolf: null,
+          nightTargetWitchHeal: false,
+          nightTargetWitchKill: null,
+          nightTargetCupid: null,
+          revealingPlayerIndex: 0,
+          lastDeaths: [],
+          hunterPendingPlayerId: null,
+          seerRevealedPlayer: null,
+          winner: null,
+          logs: []
+        });
       },
 
       startGame: () => {
-        const { selectedRoles } = get();
-        // Mélanger les rôles
-        const shuffledRoles = [...selectedRoles].sort(() => Math.random() - 0.5);
-        
-        // Charger les noms depuis l'état existant ou par défaut
-        const state = get();
-        let playerNames = state.players.map(p => p.name);
-        if (playerNames.length !== shuffledRoles.length) {
-          playerNames = Array.from({ length: shuffledRoles.length }, (_, i) => `Joueur ${i + 1}`);
+        const { players, selectedRoles } = get();
+        if (players.length < 4 || players.length !== selectedRoles.length) {
+          return;
         }
 
-        const newPlayers: Player[] = playerNames.map((name, i) => {
-          const role = shuffledRoles[i];
+        const shuffledRoles = [...selectedRoles];
+        for (let i = shuffledRoles.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledRoles[i], shuffledRoles[j]] = [shuffledRoles[j], shuffledRoles[i]];
+        }
+
+        const initializedPlayers: Player[] = players.map((p, index) => {
+          const role = shuffledRoles[index];
           return {
-            id: `p-${i + 1}-${Date.now()}`,
-            name: name.trim() || `Joueur ${i + 1}`,
-            role: role,
+            ...p,
+            role,
             isAlive: true,
             isLover: false,
             isProtected: false,
@@ -159,314 +239,278 @@ export const useGameStore = create<GameState>()(
             isFoolRevealed: false,
             hasUsedLifePotion: false,
             hasUsedDeathPotion: false,
-            isCaptain: false,
+            isCaptain: false
           };
         });
 
-        sounds.playMagicChime();
-
         set({
-          players: newPlayers,
-          phase: 'REVEAL_ROLES',
-          dayNumber: 0,
+          players: initializedPlayers,
+          phase: 'ROLE_REVEAL',
+          revealingPlayerIndex: 0,
+          dayNumber: 1,
           winner: null,
           lastDeaths: [],
           logs: [
             {
               id: `${Date.now()}-start`,
-              dayNumber: 0,
+              dayNumber: 1,
               phase: 'NIGHT',
-              message: `La partie commence avec ${newPlayers.length} villageois réunis à Thiercelieux.`,
+              message: 'La partie commence. Distribution des cartes en secret...',
               timestamp: new Date(),
               type: 'INFO'
             }
           ]
-        });
-      },
-
-      resetGame: () => {
-        set({
-          phase: 'SETUP',
-          dayNumber: 0,
-          winner: null,
-          lastDeaths: [],
-          seerRevealedPlayer: null,
-          hunterPendingPlayerId: null,
-          nightLoversChosen: null
         });
       },
 
       startNight: () => {
         const { players, dayNumber } = get();
-        const nextDay = dayNumber + 1;
+        const hasCupid = players.some(p => p.role === 'cupid' && p.isAlive) && dayNumber === 1;
+        const hasGuard = players.some(p => p.role === 'guard' && p.isAlive);
+        const hasSeer = players.some(p => p.role === 'seer' && p.isAlive);
+        const hasWolves = players.some(p => (p.role === 'werewolf' || p.role === 'white_wolf') && p.isAlive);
+        const hasWitch = players.some(p => p.role === 'witch' && p.isAlive);
 
-        // Calculer l'ordre des rôles qui se réveillent cette nuit
-        const livingRoles = new Set(players.filter(p => p.isAlive).map(p => p.role));
-        
-        const orderedSteps: RoleId[] = [];
-        
-        // Cupidon : Seulement nuit 1
-        if (nextDay === 1 && livingRoles.has('cupid')) {
-          orderedSteps.push('cupid');
-        }
-        // Salvateur
-        if (livingRoles.has('guard')) {
-          orderedSteps.push('guard');
-        }
-        // Voyante
-        if (livingRoles.has('seer')) {
-          orderedSteps.push('seer');
-        }
-        // Loups-Garous
-        if (livingRoles.has('werewolf') || livingRoles.has('white_wolf')) {
-          orderedSteps.push('werewolf');
-        }
-        // Loup Blanc (1 nuit sur 2, ex: nuit 2, 4...)
-        if (livingRoles.has('white_wolf') && nextDay % 2 === 0) {
-          orderedSteps.push('white_wolf');
-        }
-        // Sorcière
-        if (livingRoles.has('witch')) {
-          const witchPlayer = players.find(p => p.role === 'witch' && p.isAlive);
-          if (witchPlayer && (!witchPlayer.hasUsedLifePotion || !witchPlayer.hasUsedDeathPotion)) {
-            orderedSteps.push('witch');
-          }
-        }
-
-        sounds.playWolfHowl();
+        const steps: NightStep[] = [];
+        if (hasCupid) steps.push({ role: 'cupid', roleDef: ROLES.cupid, title: 'Cupidon', script: ROLES.cupid.wakeScript || '', hint: 'Désignez les 2 amoureux', soundLabel: 'Magie', soundAction: () => sounds.playMagicChime() });
+        if (hasGuard) steps.push({ role: 'guard', roleDef: ROLES.guard, title: 'Salvateur', script: ROLES.guard.wakeScript || '', hint: 'Désignez un joueur à protéger', soundLabel: 'Protection', soundAction: () => sounds.playMagicChime() });
+        if (hasSeer) steps.push({ role: 'seer', roleDef: ROLES.seer, title: 'Voyante', script: ROLES.seer.wakeScript || '', hint: 'Désignez un joueur pour voir son rôle', soundLabel: 'Oeil Astral', soundAction: () => sounds.playMagicChime() });
+        if (hasWolves) steps.push({ role: 'werewolf', roleDef: ROLES.werewolf, title: 'Loups-Garous', script: ROLES.werewolf.wakeScript || '', hint: 'Désignez la proie de la meute', soundLabel: 'Hurlement', soundAction: () => sounds.playWolfHowl() });
+        if (hasWitch) steps.push({ role: 'witch', roleDef: ROLES.witch, title: 'Sorcière', script: ROLES.witch.wakeScript || '', hint: 'Utilisez vos potions', soundLabel: 'Potion', soundAction: () => sounds.playPotion() });
 
         set({
           phase: 'NIGHT_ACTION',
-          dayNumber: nextDay,
+          nightSteps: steps,
           activeNightStepIndex: 0,
-          nightSteps: orderedSteps,
           nightTargetWolf: null,
+          nightTargetGuard: null,
           nightTargetWitchHeal: false,
           nightTargetWitchKill: null,
-          nightTargetGuard: null,
-          seerRevealedPlayer: null,
-          lastDeaths: [],
-          logs: [
-            ...get().logs,
-            {
-              id: `${Date.now()}-night`,
-              dayNumber: nextDay,
-              phase: 'NIGHT',
-              message: `Nuit tombée sur Thiercelieux (Nuit ${nextDay}). Le village s'endort paisiblement...`,
-              timestamp: new Date(),
-              type: 'INFO'
-            }
-          ]
+          seerRevealedPlayer: null
         });
+
+        sounds.startNightLoop();
       },
 
       nextNightStep: () => {
         const { activeNightStepIndex, nightSteps } = get();
         if (activeNightStepIndex + 1 < nightSteps.length) {
-          set({
-            activeNightStepIndex: activeNightStepIndex + 1,
-            seerRevealedPlayer: null
-          });
+          const nextIdx = activeNightStepIndex + 1;
+          set({ activeNightStepIndex: nextIdx, seerRevealedPlayer: null });
+          const step = nightSteps[nextIdx];
+          if (step && step.soundAction) step.soundAction();
         } else {
-          // Toutes les actions de nuit sont terminées -> Résolution du matin
-          get().resolveNight();
+          // Fin de nuit
+          get().advancePhase();
         }
-      },
-
-      setNightTargetWolf: (playerId) => set({ nightTargetWolf: playerId }),
-      setNightGuardTarget: (playerId) => set({ nightTargetGuard: playerId }),
-      
-      setNightCupidLovers: (p1, p2) => {
-        const { players } = get();
-        const updated = players.map(p => {
-          if (p.id === p1 || p.id === p2) {
-            return { ...p, isLover: true };
-          }
-          return p;
-        });
-        set({ players: updated, nightLoversChosen: [p1, p2] });
-      },
-
-      setNightSeerTarget: (playerId) => {
-        const { players } = get();
-        const target = players.find(p => p.id === playerId);
-        if (target) {
-          sounds.playMagicChime();
-          set({
-            seerRevealedPlayer: {
-              player: target,
-              roleDef: ROLES[target.role]
-            }
-          });
-        }
-      },
-
-      clearSeerTarget: () => set({ seerRevealedPlayer: null }),
-
-      setNightWitchActions: (heal, killPlayerId) => {
-        set({
-          nightTargetWitchHeal: heal,
-          nightTargetWitchKill: killPlayerId
-        });
-      },
-
-      resolveNight: () => {
-        const {
-          players,
-          nightTargetWolf,
-          nightTargetWitchHeal,
-          nightTargetWitchKill,
-          nightTargetGuard,
-          dayNumber
-        } = get();
-
-        const deadPlayerIds = new Set<string>();
-        const deathReasons: { player: Player; reason: string }[] = [];
-
-        // 1. Morsure des loups
-        if (nightTargetWolf) {
-          // Vérifier si le joueur est protégé par le Salvateur
-          const isProtected = nightTargetGuard === nightTargetWolf;
-          // Vérifier si la Sorcière soigne
-          const isHealed = nightTargetWitchHeal;
-
-          const victim = players.find(p => p.id === nightTargetWolf);
-
-          if (victim) {
-            if (isProtected || isHealed) {
-              // Sauvé !
-            } else if (victim.role === 'elder' && victim.elderLives > 1) {
-              // L'Ancien résiste à 1 attaque
-              victim.elderLives -= 1;
-            } else {
-              deadPlayerIds.add(victim.id);
-              deathReasons.push({
-                player: victim,
-                reason: 'Dévoré(e) sauvagement par les Loups-Garous durant son sommeil.'
-              });
-            }
-          }
-        }
-
-        // 2. Potion de mort de la Sorcière
-        if (nightTargetWitchKill) {
-          const witchVictim = players.find(p => p.id === nightTargetWitchKill);
-          if (witchVictim && !deadPlayerIds.has(witchVictim.id)) {
-            deadPlayerIds.add(witchVictim.id);
-            deathReasons.push({
-              player: witchVictim,
-              reason: 'Empoisonné(e) par la fiole mortelle de la Sorcière.'
-            });
-          }
-        }
-
-        // 3. Répercussion des Amoureux (Si l'un meurt, l'autre meurt de chagrin)
-        const lovers = players.filter(p => p.isLover);
-        if (lovers.length === 2) {
-          const deadLover = lovers.find(l => deadPlayerIds.has(l.id));
-          const survivingLover = lovers.find(l => !deadPlayerIds.has(l.id));
-          if (deadLover && survivingLover) {
-            deadPlayerIds.add(survivingLover.id);
-            deathReasons.push({
-              player: survivingLover,
-              reason: `Mort(e) de chagrin suite à la perte de son amour éternel (${deadLover.name}).`
-            });
-          }
-        }
-
-        // 4. Mettre à jour l'état des joueurs
-        const updatedPlayers = players.map(p => {
-          let updated = { ...p };
-          if (deadPlayerIds.has(p.id)) {
-            updated.isAlive = false;
-          }
-          if (p.role === 'witch') {
-            if (nightTargetWitchHeal) updated.hasUsedLifePotion = true;
-            if (nightTargetWitchKill) updated.hasUsedDeathPotion = true;
-          }
-          return updated;
-        });
-
-        // 5. Vérifier si un Chasseur est mort durant la nuit
-        const hunterDied = updatedPlayers.find(p => p.role === 'hunter' && deadPlayerIds.has(p.id));
-
-        sounds.playBell();
-        if (deathReasons.length > 0) {
-          setTimeout(() => sounds.playDeath(), 600);
-        }
-
-        const newLogs: GameLog[] = [...get().logs];
-        if (deathReasons.length === 0) {
-          newLogs.push({
-            id: `${Date.now()}-morn-peace`,
-            dayNumber,
-            phase: 'DAY',
-            message: 'Le village se réveille dans le calme : aucun mort n\'est à déplorer cette nuit !',
-            timestamp: new Date(),
-            type: 'INFO'
-          });
-        } else {
-          deathReasons.forEach(d => {
-            newLogs.push({
-              id: `${Date.now()}-${d.player.id}`,
-              dayNumber,
-              phase: 'DAY',
-              message: `${d.player.name} (${ROLES[d.player.role].name}) : ${d.reason}`,
-              timestamp: new Date(),
-              type: 'DEATH'
-            });
-          });
-        }
-
-        set({
-          players: updatedPlayers,
-          phase: hunterDied ? 'DAY_HUNTER' : 'DAY_START',
-          hunterPendingPlayerId: hunterDied ? hunterDied.id : null,
-          lastProtectedPlayerId: nightTargetGuard,
-          lastDeaths: deathReasons,
-          logs: newLogs
-        });
-
-        // Vérification de victoire
-        get().checkVictory();
       },
 
       startVote: () => {
         set({ phase: 'DAY_VOTE' });
       },
 
-      eliminatePlayer: (playerId, reason) => {
+      nextRevealCard: () => {
+        const { revealingPlayerIndex, players } = get();
+        if (revealingPlayerIndex + 1 < players.length) {
+          set({ revealingPlayerIndex: revealingPlayerIndex + 1 });
+        } else {
+          get().endRoleReveal();
+        }
+      },
+
+      endRoleReveal: () => {
+        const { players } = get();
+        const hasCupid = players.some(p => p.role === 'cupid');
+        const nextPhase: GamePhase = hasCupid ? 'NIGHT_CUPID' : 'NIGHT_GUARD';
+        
+        set({
+          phase: nextPhase,
+          revealingPlayerIndex: 0
+        });
+
+        sounds.startNightLoop();
+      },
+
+      setNightGuardTarget: (playerId) => set({ nightTargetGuard: playerId, lastProtectedPlayerId: playerId }),
+      setNightSeerTarget: (playerId) => {
+        const { players } = get();
+        const target = players.find(p => p.id === playerId) || null;
+        if (target) {
+          set({ nightTargetSeer: playerId, seerRevealedPlayer: { player: target, roleDef: ROLES[target.role] || ROLES.villager } });
+        } else {
+          set({ nightTargetSeer: null, seerRevealedPlayer: null });
+        }
+      },
+      clearSeerTarget: () => set({ nightTargetSeer: null, seerRevealedPlayer: null }),
+      setNightWolfTarget: (playerId) => set({ nightTargetWolf: playerId }),
+      setNightWitchHeal: (heal) => set({ nightTargetWitchHeal: heal }),
+      setNightWitchKill: (playerId) => set({ nightTargetWitchKill: playerId }),
+      setNightWitchActions: (heals, killsId) => set({ nightTargetWitchHeal: heals, nightTargetWitchKill: killsId }),
+      
+      setNightCupidLovers: (p1Id, p2Id) => {
+        const { players } = get();
+        const updated = players.map(p => ({
+          ...p,
+          isLover: p.id === p1Id || p.id === p2Id
+        }));
+        set({
+          players: updated,
+          nightTargetCupid: [p1Id, p2Id]
+        });
+      },
+
+      advancePhase: () => {
+        const { phase, players, dayNumber, nightTargetWolf, nightTargetGuard, nightTargetWitchHeal, nightTargetWitchKill } = get();
+
+        if (phase === 'NIGHT_ACTION' || phase === 'NIGHT_WITCH' || phase === 'NIGHT_END') {
+          sounds.stopNightLoop();
+          
+          const deadPlayerIds = new Set<string>();
+          const deathReasons: { player: Player; reason: string }[] = [];
+
+          if (nightTargetWolf && nightTargetWolf !== nightTargetGuard && !nightTargetWitchHeal) {
+            const wolfVictim = players.find(p => p.id === nightTargetWolf);
+            if (wolfVictim) {
+              if (wolfVictim.role === 'elder' && wolfVictim.elderLives > 1) {
+                wolfVictim.elderLives -= 1;
+              } else {
+                deadPlayerIds.add(wolfVictim.id);
+                deathReasons.push({
+                  player: wolfVictim,
+                  reason: 'Attaqué(e) et dévoré(e) par la meute des Loups-Garous.'
+                });
+              }
+            }
+          }
+
+          if (nightTargetWitchKill) {
+            const witchVictim = players.find(p => p.id === nightTargetWitchKill);
+            if (witchVictim && !deadPlayerIds.has(witchVictim.id)) {
+              deadPlayerIds.add(witchVictim.id);
+              deathReasons.push({
+                player: witchVictim,
+                reason: 'Empoisonné(e) par la fiole mortelle de la Sorcière.'
+              });
+            }
+          }
+
+          const deadLovers = players.filter(p => deadPlayerIds.has(p.id) && p.isLover);
+          if (deadLovers.length > 0) {
+            const allLovers = players.filter(p => p.isLover);
+            allLovers.forEach(l => {
+              if (!deadPlayerIds.has(l.id)) {
+                deadPlayerIds.add(l.id);
+                deathReasons.push({
+                  player: l,
+                  reason: `Mort(e) de chagrin après la perte tragique de son grand amour (${deadLovers[0].name}).`
+                });
+              }
+            });
+          }
+
+          const updatedPlayers = players.map(p => {
+            const updated = { ...p };
+            if (deadPlayerIds.has(p.id)) {
+              updated.isAlive = false;
+            }
+            if (p.role === 'witch') {
+              if (nightTargetWitchHeal) updated.hasUsedLifePotion = true;
+              if (nightTargetWitchKill) updated.hasUsedDeathPotion = true;
+            }
+            return updated;
+          });
+
+          const hunterDied = updatedPlayers.find(p => p.role === 'hunter' && deadPlayerIds.has(p.id));
+
+          sounds.playBell();
+
+          const newLogs: GameLog[] = [...get().logs];
+          if (deathReasons.length === 0) {
+            newLogs.push({
+              id: `${Date.now()}-morn-peace`,
+              dayNumber,
+              phase: 'DAY',
+              message: 'Le village se réveille dans le calme : aucun mort n\'est à déplorer cette nuit !',
+              timestamp: new Date(),
+              type: 'INFO'
+            });
+          } else {
+            deathReasons.forEach(d => {
+              newLogs.push({
+                id: `${Date.now()}-morn-${d.player.id}`,
+                dayNumber,
+                phase: 'DAY',
+                message: `${d.player.name} (${ROLES[d.player.role].name}) : ${d.reason}`,
+                timestamp: new Date(),
+                type: 'DEATH'
+              });
+            });
+          }
+
+          set({
+            players: updatedPlayers,
+            lastDeaths: deathReasons,
+            phase: hunterDied ? 'DAY_HUNTER' : 'DAY_START',
+            hunterPendingPlayerId: hunterDied ? hunterDied.id : null,
+            logs: newLogs,
+            nightTargetGuard: null,
+            nightTargetSeer: null,
+            nightTargetWolf: null,
+            nightTargetWitchHeal: false,
+            nightTargetWitchKill: null,
+            seerRevealedPlayer: null
+          });
+
+          get().checkVictory();
+          return;
+        }
+
+        if (phase === 'DAY_START') {
+          set({ phase: 'DAY_DISCUSS' });
+          return;
+        }
+
+        if (phase === 'DAY_DISCUSS') {
+          set({ phase: 'DAY_VOTE' });
+          return;
+        }
+
+        if (phase === 'DAY_VOTE') {
+          const nextDay = dayNumber + 1;
+          set({
+            dayNumber: nextDay,
+            phase: 'NIGHT_START',
+            lastDeaths: [],
+            logs: [
+              ...get().logs,
+              {
+                id: `${Date.now()}-night-${nextDay}`,
+                dayNumber: nextDay,
+                phase: 'NIGHT',
+                message: `La nuit ${nextDay} tombe sur le village... Tout le monde s'endort.`,
+                timestamp: new Date(),
+                type: 'INFO'
+              }
+            ]
+          });
+          get().startNight();
+          return;
+        }
+      },
+
+      eliminatePlayer: (playerId, customReason) => {
         const { players, dayNumber } = get();
         const target = players.find(p => p.id === playerId);
         if (!target) return;
 
-        // Cas spécial de l'Idiot du Village
-        if (target.role === 'fool' && !target.isFoolRevealed) {
-          sounds.playMagicChime();
-          const updated = players.map(p => p.id === playerId ? { ...p, isFoolRevealed: true } : p);
-          set({
-            players: updated,
-            logs: [
-              ...get().logs,
-              {
-                id: `${Date.now()}-fool`,
-                dayNumber,
-                phase: 'DAY',
-                message: `${target.name} est l'Idiot du Village ! Le village est pris de pitié et l'épargne. Mais il perd son droit de vote.`,
-                timestamp: new Date(),
-                type: 'ACTION'
-              }
-            ]
-          });
-          return;
-        }
-
-        const deadPlayerIds = new Set<string>([playerId]);
-        const deathReasons: { player: Player; reason: string }[] = [
-          { player: target, reason }
+        const deadPlayerIds = new Set<string>([target.id]);
+        const deathReasons = [
+          {
+            player: target,
+            reason: customReason || 'Condamné(e) par le vote du village et mené(e) au bûcher.'
+          }
         ];
 
-        // Vérifier les amoureux
         if (target.isLover) {
           const partner = players.find(p => p.isLover && p.id !== target.id);
           if (partner && partner.isAlive) {
@@ -484,8 +528,6 @@ export const useGameStore = create<GameState>()(
           }
           return p;
         });
-
-        sounds.playDeath();
 
         const isHunter = target.role === 'hunter';
 
@@ -602,7 +644,6 @@ export const useGameStore = create<GameState>()(
           return null;
         }
 
-        // Victoire des Amoureux : s'ils ne sont que 2 en vie et qu'ils sont amoureux
         const livingLovers = livingPlayers.filter(p => p.isLover);
         if (livingPlayers.length === 2 && livingLovers.length === 2) {
           set({
@@ -623,7 +664,6 @@ export const useGameStore = create<GameState>()(
           return 'LOVERS';
         }
 
-        // Victoire du Loup Blanc seul
         const livingWhiteWolf = livingPlayers.filter(p => p.role === 'white_wolf');
         if (livingPlayers.length === 1 && livingWhiteWolf.length === 1) {
           set({
@@ -647,7 +687,6 @@ export const useGameStore = create<GameState>()(
         const wolvesCount = livingPlayers.filter(p => p.role === 'werewolf' || p.role === 'white_wolf').length;
         const villageCount = livingPlayers.length - wolvesCount;
 
-        // Victoire des Loups : ils sont égaux ou supérieurs en nombre aux villageois
         if (wolvesCount >= villageCount && wolvesCount > 0) {
           set({
             winner: 'WEREWOLVES',
@@ -667,7 +706,6 @@ export const useGameStore = create<GameState>()(
           return 'WEREWOLVES';
         }
 
-        // Victoire des Villageois : tous les loups sont éliminés
         if (wolvesCount === 0) {
           set({
             winner: 'VILLAGE',
@@ -691,16 +729,16 @@ export const useGameStore = create<GameState>()(
       }
     }),
     {
-      name: 'loup-garou-party-state',
+      name: 'werewolf-storage',
       partialize: (state) => ({
         players: state.players,
         selectedRoles: state.selectedRoles,
-        gameMode: state.gameMode,
         phase: state.phase,
         dayNumber: state.dayNumber,
-        winner: state.winner,
+        gameMode: state.gameMode,
         logs: state.logs,
-        soundEnabled: state.soundEnabled
+        soundEnabled: state.soundEnabled,
+        isSoundMuted: state.isSoundMuted
       })
     }
   )
